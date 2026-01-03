@@ -20,18 +20,17 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+\newpage
+
+# Abstract
+
+This report analyzes the determinants of academic performance using the UCI "Student Performance Data Set," derived from Mathematics classes in two Portuguese schools (Gabriel Pereira and Mousinho da Silveira) and collected through school reports and questionnaires. The study aims to identify the demographic, social, and behavioral factors driving final grades (G3), using empirical evidence to validate or refuse common assumptions about student performance. Employing Chi-Squared tests, along with parametric tests and regression analysis, we investigate variables ranging from family background to social habits.
+
+# Introduction
+
 ```{r}
 data <- read.csv("./data/student-mat.csv", sep=";")
 str(data)
 summary(data)
 head(data)
-```
-
-```{r}
-# Merge the two datasets
-d1 <- read.table("./data/student-mat.csv",sep=";",header=TRUE)
-d2 <- read.table("./data/student-por.csv",sep=";",header=TRUE)
-
-d3 <- merge(d1,d2,by=c("school","sex","age","address","famsize","Pstatus","Medu","Fedu","Mjob","Fjob","reason","nursery","internet"))
-print(nrow(d3)) # 382 students
 ```
