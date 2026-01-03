@@ -1,0 +1,37 @@
+---
+title: "Final Project"
+subtitle: "Inferential Statistics 2025/2026"
+author: "Giordano Alberti, Leonardo Bertani"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document: 
+    toc: true
+    fig_height: 6
+    number_sections: true
+  html_document: 
+    toc: true
+editor_options: 
+  markdown: 
+    wrap: 80
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+data <- read.csv("./data/student-mat.csv", sep=";")
+str(data)
+summary(data)
+head(data)
+```
+
+```{r}
+# Merge the two datasets
+d1 <- read.table("./data/student-mat.csv",sep=";",header=TRUE)
+d2 <- read.table("./data/student-por.csv",sep=";",header=TRUE)
+
+d3 <- merge(d1,d2,by=c("school","sex","age","address","famsize","Pstatus","Medu","Fedu","Mjob","Fjob","reason","nursery","internet"))
+print(nrow(d3)) # 382 students
+```
