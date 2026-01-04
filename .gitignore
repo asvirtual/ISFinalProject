@@ -1,1 +1,3 @@
 .lintr
+*.pdf
+.DS_Store

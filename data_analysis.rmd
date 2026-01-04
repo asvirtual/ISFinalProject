@@ -14,19 +14,41 @@ editor_options:
   markdown: 
     wrap: 80
   chunk_output_type: console
+bibliography: references.bib
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-\newpage
 
 # Abstract
 
-This report analyzes the determinants of academic performance using the UCI "Student Performance Data Set," derived from Mathematics classes in two Portuguese schools (Gabriel Pereira and Mousinho da Silveira) and collected through school reports and questionnaires. The study aims to identify the demographic, social, and behavioral factors driving final grades (G3), using empirical evidence to validate or refuse common assumptions about student performance. Employing Chi-Squared tests, along with parametric tests and regression analysis, we investigate variables ranging from family background to social habits.
+This report analyzes the determinants of academic performance using the UCI "Student Performance Data Set",  [@cortez2008student] derived from Mathematics classes in two Portuguese schools (Gabriel Pereira and Mousinho da Silveira) and collected through school reports and questionnaires. The study aims to identify the demographic, social, and behavioral factors driving final grades (G3), using empirical evidence to validate or refuse common assumptions about student performance. Employing Chi-Squared tests, along with parametric tests and regression analysis, we investigate variables ranging from family background to social habits.
+
+\newpage
 
 # Introduction
+
+Education is a cornerstone of personal and economic development; however, high failure rates in core subjects such as Mathematics remain a significant challenge, particularly within the Portuguese secondary school system. Academic performance is rarely the result of a single variable. Instead, it emerges from a complex interplay of demographic attributes, family background, and individual social behaviors outside the classroom.
+
+While previous studies on this dataset have primarily focused on minimizing predictive error using complex data mining algorithms, this report adopts a classical statistical framework. The primary objective is explanatory and inferential: to empirically isolate and quantify the factors that drive student success or failure.
+
+The dataset, sourced from the UCI "Student Performance Data Set" [@cortez2008student], combines administrative records with questionnaire responses from secondary schools in Portugal, Gabriel Pereira and Mousinho da Silveira, collected during the 2005–2006 academic year. In particular, this report focuses on Mathematics subject.
+
+To contextualize the dataset's timeframe, the latest PISA 2022 National Report by IAVE [@iave2023pisa], indicates thta student performance in Portugal has increased in the first decades of the 2000s. However, in recent years a downward trend has been observerd, although performance remains aligned with the OECD average.
+
+![Evolution of average mathematics scores between 2000 and 2022: IAVE, based on OECD (2023)](./data/IAVE2023.png)
+
+We investigate whether common assumptions about student life hold statistical weight. The idea behind this analysis is to provide the statistical basis for answering the following questions:
+\begin{itemize}
+  \item How do social habits (e.g., alcohol consumption, romantic relationships) interact with academic results?
+  \item Do family background factors (e.g., parents' education) significantly stratify student performance?
+  \item Can we quantify the impact of effort (study time) versus external support (paid classes) on the final Mathematics grade (G3)?
+\end{itemize}
+
+To address these questions, this study employs a structured statistical approach ranging from Chi-Squared tests for independence and ANOVA for group comparisons, to Linear and Logistic Regression models for identifying significant predictors of the final grade.
+
 
 ```{r}
 data <- read.csv("./data/student-mat.csv", sep=";")
@@ -34,3 +56,6 @@ str(data)
 summary(data)
 head(data)
 ```
+
+
+# Bibliography
