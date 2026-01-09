@@ -30,9 +30,6 @@ This report analyzes the determinants of academic performance using the UCI "Stu
 # Introduction
 
 
-
-
-
 # Data description and exploration
 
 ```{r include=FALSE}
@@ -42,91 +39,33 @@ summary(data)
 head(data)
 ```
 
-The dataset was created based on school report cards relating to grades and number of absences, as well as questionnaires (with closed-ended questions), in order to supplement the previous information.
-In total, there are 395 observations for the mathematics dataset and 33 variables with no missing values. We have both categorical and discrete variables. 
+# Statistical Analysis
 
-\begin{longtable}{p{2.5cm} p{11cm}}
-\textbf{Attribute} & \textbf{Description (Domain)} \\
-\hline
-\textbf{school}     & school (binary: Gabriel Pereira [GP] or Mousinho da Silveira [MS]) \\
-\textbf{sex}        & sex (binary: female [F] or male [M]) \\
-\textbf{age}        & age (numeric: from 15 to 22) \\
-\textbf{address}    & home address type (binary: urban [U] or rural [R]) \\
-\textbf{famsize}    & family size (binary: $\le$ 3 or $>$ 3) \\
-\textbf{Pstatus}    & parent's cohabitation status (binary: living together [T] or apart [A]) \\
-\textbf{Medu}       & mother's education level (numeric: none [0] to higher [4]) \\
-\textbf{Fedu}       & father's education level (numeric: none [0] to higher [4]) \\
-\textbf{Mjob}       & mother's job (nominal: among 5 possible choices) \\
-\textbf{Fjob}       & father's job (nominal: among 5 possible choices) \\
-\textbf{reason}     & reason to choose this school (nominal) \\
-\textbf{guardian}   & guardian (nominal: mother, father or other) \\
-\textbf{traveltime} & home to school travel time (numeric: 1 to 4) \\
-\textbf{studytime}  & weekly study time (numeric: 1 to 4) \\
-\textbf{failures}   & number of past class failures (numeric: $n$ if $1 \le n < 3$, else 4) \\
-\textbf{schoolsup}  & extra educational school support (binary: yes [Y] or no [N]) \\
-\textbf{famsup}     & family educational support (binary: yes [Y] or no [N]) \\
-\textbf{paid}       & extra paid classes (binary: yes [Y] or no [N]) \\
-\textbf{activities} & extra-curricular activities (binary: yes [Y] or no [N]) \\
-\textbf{nursery}    & attended nursery school (binary: yes [Y] or no [N]) \\
-\textbf{internet}   & Internet access at home (binary: yes [Y] or no [N]) \\
-\textbf{higher}     & wants to take higher education (binary: yes [Y] or no [N]) \\
-\textbf{romantic}   & with a romantic relationship (binary: yes [Y] or no [N]) \\
-\textbf{famrel}     & quality of family relationships (numeric: very bad [1] to excellent [5]) \\
-\textbf{freetime}   & free time after school (numeric: very low [1] to very high [5]) \\
-\textbf{goout}      & going out with friends (numeric: very low [1] to very high [5]) \\
-\textbf{Dalc}       & workday alcohol consumption (numeric: very low [1] to very high [5]) \\
-\textbf{Walc}       & weekend alcohol consumption (numeric: very low [1] to very high [5]) \\
-\textbf{health}     & current health status (numeric: very bad [1] to very good [5]) \\
-\textbf{absences}   & number of school absences (numeric: from 0 to 93) \\
-\textbf{G1}         & first period grade (numeric: from 0 to 20) \\
-\textbf{G2}         & second period grade (numeric: from 0 to 20) \\
-\textbf{G3}         & final grade (numeric: from 0 to 20) \\
-\end{longtable}
+## T-Test (Group Comparison)
 
-We use a comprehensive approach, displaying histograms for numerical data and bar plots for categorical data. The labels above the bars indicate the relative proportion of each category.
+In this section, we compare the mean final grade (G3) between two different categories.
 
-```{r echo=FALSE, fig.height=40, fig.width=25, echo=FALSE, message=FALSE, warning = FALSE}
-library(ggplot2)
-library(dplyr)
-library(gridExtra)
+### Hypothesis A (Technological)
 
-plot_list <- list()
+Is there a significant difference in grades between those who have Internet at home and those who do not?
 
-for (col_name in names(data)[1:(ncol(data)-3)]) {
-  values <- data[[col_name]]
-  if (is.numeric(values)) {
-    p <- ggplot(data, aes(x = .data[[col_name]])) +
-      geom_histogram(fill = "gray", color = "black", bins = 20) +
-      theme_minimal(base_size = 24) +
-      labs(title = col_name, y = "Freq", x = "")
-  } else {
-    p <- ggplot(data, aes(x = .data[[col_name]])) +
-      geom_bar(aes(y = (after_stat(count))/sum(after_stat(count))), fill = "gray", color = "black") +
-      geom_text(aes(y = (after_stat(count))/sum(after_stat(count)), 
-                    label = round((after_stat(count))/sum(after_stat(count)), 2)), 
-                stat = "count", vjust = -0.5) +
-      theme_minimal(base_size = 24) +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-      labs(title = col_name, y = "Proportion", x = "")
-  }
-  plot_list[[col_name]] <- p
-}
-grid.arrange(grobs = plot_list, ncol = 4)
+```{r}
+t.test(G3 ~ internet, data = data)
 ```
 
-For the target variables (G1, G2, G3), we use box plots. This allows us to directly compare the distribution of votes over time. The graph below shows the median, the interquartile range and outliers (if are present).
+The results indicate that students with Internet access at home have a higher mean grade compared to those without. The T-test yields a p-value slightly above the 0.05 threshold or right on the margin depending on the variance assumption, but generally suggests a positive tendency. Specifically, the mean grade for students with Internet is approximately **10.6**, while for those without, it is **9.4**. 
 
-```{r echo=FALSE, fig.height=5, fig.width=10}
-library(tidyr)
-cols_indices <- (ncol(data)-2):ncol(data)
-cols_names <- names(data)[cols_indices]
+This difference might stem from easier access to study materials, online exercises, and educational platforms. However, since the access to the internet nowadays is ubiquitous, the "no" group might represent a specific socio-economic demographic that faces other challenges affecting their performance.
 
-data_long <- data %>%
-  select(all_of(cols_names)) %>%
-  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
+### Hypothesis B (Sentimental)
 
-ggplot(data_long, aes(x = Variable, y = Value)) +
-  geom_boxplot(fill = "gray", color = "black") +
-  theme_minimal(base_size = 24) +
-  labs(y = "Grade", x = "")
+Do students in a romantic relationship have lower grades compared to single students?
+
+```{r}
+t.test(G3 ~ romantic, data = data)
 ```
+
+Here we observe a statistically significant difference. The mean grade for single students is approximately **10.8**, whereas students in a romantic relationship have a mean grade of **9.6**. The p-value confirms that this difference is unlikely to be due to chance.
+
+This finding aligns with the "time allocation" theory: maintaining a romantic relationship requires time and emotional energy that might otherwise be dedicated to studying. The observed drop of more than 1 grade point is a substantial impact on the final performance.
+
