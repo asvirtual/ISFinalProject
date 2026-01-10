@@ -40,49 +40,54 @@ head(data)
 
 ## Test of Correlation
 
-While the Chi-Squared, or in some cases the Fisher's Exact Test, allowed us to analyze associations between categorical variables, to examine relationship between numerical variables we use the Correlation Test.
+While the Chi-Squared, or in some cases the Fisher's Exact Test, allowed us to analyze associations between categorical variables, to examine relationship between numerical variables we use the Correlation Analysis.
 
-This test calculate a coefficient $r$ that measures the strength and the direction of the relationship between the two variables.
+This test calculate a coefficient that measures the strength and the direction of the relationship between the two variables. The most common is the Pearson coefficient ($r$), but depending on the data distribution, the Spearman rank coefficient ($\rho$) may be more appropriate.
 
-The coefficient $r$ ranges in $[-1,+1]$:
+The coefficient for Pearson's test is: $$r = \frac{1}{n-1}\sum_{i=1}^n \left(\frac{x_i - \bar{x}}{s_x}\right) \left(\frac{y_i-\bar{y}}{s_y}\right)$$ where $\bar{x}$ and $\bar{y}$ are the sample means, $s_x$ and $s_y$ are the sample standard deviation of $x$ and $y$. 
+The coefficient for Spearman's test is: $$\rho = \frac{cov(R[X],R[Y])}{\sigma_{R[X]} \sigma_{R[Y]}}$$
+the correlation operator applied to the rank variables.
+
+Then, this value is inside the range $[-1,+1]$:
 \begin{itemize}
-    \item $r = 1$: we have a perfect positive correlation
-    \item $r = -1$: we have a perfect negative correlation
-    \item $r = 0$: we don't have a linear correlation.
+    \item $r, \rho > 0$: positive correlation
+    \item $r, \rho < 0$: negative correlation
+    \item $r, \rho = 0$: no correlation.
 \end{itemize}
 
 The tes test verifies the following hypotheses:
 \begin{itemize}
-    \item $H_0$: variables are not correlated
-    \item $H_1$: there is a correlation between variables.
+    \item $H_0$: variables are not correlated ($r \lor \rho = 0$)
+    \item $H_1$: there is a correlation between variables ($r \lor \rho \neq 0$).
 \end{itemize}
 
 ### Impact of Absences on Final Grade
 
-We hypothesize a negative relationship between the number of school absences (`absences`) and the final grade (`G3`). A high number of absences could affect ability to keep up with the study program and affect performance.
+We hypothesize a negative relationship between the number of school absences (`absences`) and the final grade (`G3`). A high number of absences could affect ability to keep up with the study program and lowering performance.
 
-Before we can compute the correlationt test, we have to verify the distribution of the `absences` variable. In fact, the Pearson Correlation test assums that data are drawn by a normal distribution.
+To choose the most appropriate correlation test, we have to verify the distribution of the `absences` variable. In fact, the Pearson Correlation test assumes that data are drawn from a normal distribution.
 
 ```{r echo=FALSE}
-hist(data$absences, main="Absences' Distribution", xlab="Number of Absences")
+hist(data$absences, main="Distribution of Absences", xlab="Number of Absences")
+shapiro_test <- shapiro.test(data$absences)
 ```
 
-As we can see, we have a right-tailed distribution, so is better to compute a Spearman test which not required a normal distribution of the data and is more resistent to outliers.
+As shown in the histogram, the variable follows a right-skewed distribution (strongly asymmetric). 
 
-# Shapiro-Wilk test (Se p-value < 0.05, non è normale)
-shapiro.test(df$absences[1:5000])
+Then, the Shapiro-Wilk's test returns a p-value = `r shapiro_test$p.value` lower than $\alpha = 0.05$ that confirms non-normality. 
+Since those information, we can say that is better to compute a Spearman test which not required a normal distribution of the data and is more resistent to outliers.
 
 ```{r include=FALSE}
-cor_test_absences <- cor.test(data$absences, data$G3, method = "spearman", exact = FALSE)
+cor_spearman_absences <- cor.test(data$absences, data$G3, method = "spearman", exact = FALSE)
 ```
 
-After computing the test, we can see that the correlation factor is `r round(cor_test_absences$estimate, 3)`
+After computing the test, we can see that the correlation factor from Spearman is `r round(cor_spearman_absences$estimate, 3)`.
 
-Due to the presence of ties in the 'absences' and 'G3' variables, the exact p-value for Spearman's $\rho$ could not be computed. Therefore, the standard asymptotic approximation was used.
+Due to the presence of ties in the `absences` and `G3` variables, the exact p-value for Spearman's $\rho$ could not be computed. Therefore, the standard asymptotic approximation was used `r round(cor_spearman_absences$p.value, 3)`. Since this value is very hight, we cannot reject $H_0$. Statistically, this indicates no significant correlation between absences and the final grade in this dataset. This finding refutes our initial hypothesis that higher absences lead to lower grades.
 
 Using a scatterplot we can see that the trend given by the correlation test.
 
-```{r}
+```{r echo=FALSE}
 plot(data$absences, data$G3, 
      main = "Absences vs Final Grade (G3)",
      xlab = "Number of Absences", 
