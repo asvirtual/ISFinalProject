@@ -28,9 +28,99 @@ This report analyzes the determinants of academic performance using the UCI "Stu
 
 # Introduction
 
-```{r}
-data <- read.csv("./data/student-mat.csv", sep=";")
+```{r include=FALSE}
+data <- read.csv("./data/student-mat.csv", sep=";", stringsAsFactors = TRUE)
 str(data)
 summary(data)
 head(data)
 ```
+
+
+## Logistic Regression
+
+Logistic Regression is the standard statistical method for binary classification problems.
+It models the probability $\vartheta(X)=P(Y=1|X)$ that an event occurs as a function of independent variables $X$. Instead of fitting a straight line, it uses the logistic function to map the output between 0 and 1.
+
+The logistic function is defined as:
+$$\vartheta(X) = \frac{e^{\beta_0 + \beta_1 X_1 + \dots + \beta_k X_k}}{1 + e^{\beta_0 + \beta_1 X_1 + \dots + \beta_k X_k}}$$
+and the regression is expressed in terms of log-odds: $$\log\left(\frac{\vartheta(X)}{1-\vartheta(X)}\right) = \beta_0 + \beta_1 X_1 + \dots + \beta_k X_k$$
+Where $\beta_i$ are the coefficients of the model.
+
+A positive coefficient ($\beta_i > 0$) implies that as $X_i$ increases, the odds/probability of success increase. Conversely, a negative coefficient suggests a decrease in the probability of success.
+
+### The Impact of Educational Support
+
+We aim to predict whether a student will be Promoted (G3 $\ge$ 10) or Fail (G3 $<$ 10).
+
+The initial predictors selected, from a strictly academic point of view, are:
+\begin{itemize}
+    \item \texttt{schoolsup:} Extra educational support [Y/N].
+    \item \texttt{paid:} Extra paid classes within the course subject [Y/N].
+    \item \texttt{higher:} Wants to take higher education [Y/N].
+\end{itemize}
+
+Before computing the model, we can do some consideration. Our sample is sufficiently large since we have 395 students. This facts is a general frame on the data, but then we can analyze the relationship among the chosen predictor variables (`schoolsup`, `paid`, `higher`). High correlation between predictors can inflate the variance of the coefficient estimates, making the model unstable. Since our predictors are categorical, the standard practice suggests the Chi-Squared test. 
+
+```{r echo = FALSE}
+table_sup_higher <- table(data$schoolsup, data$higher)
+table_sup_higher
+```
+
+However, we have a contingency table with only one element in the cell relating to educational support without the desire to attend university, and therefore we must verify independence in pairs using Fisher's test with the hypotheses:
+\begin{itemize}
+    \item $H_0$: predictors are independent.
+    \item $H_1$: predictors are associated.
+\end{itemize}
+
+```{r echo=FALSE}
+test_sup_paid <- fisher.test(table(data$schoolsup, data$paid))
+test_sup_higher <- fisher.test(table(data$schoolsup, data$higher))
+test_paid_higher <- fisher.test(table(data$paid, data$higher))
+```
+
+The first two tests [(`schoolsup` vs `paid`), (`schoolsup` vs `higher`)] yield p-values [`r round(test_sup_paid$p.value,3)`, `r round(test_sup_higher$p.value,3)`] $> 0.05$, so we fail to reject the null hypothesis; these variables are statistically independent. The last test (`paid` vs `higher`) returns a highly significant p-value (`r round(test_paid_higher$p.value,6)` $< 0.05$), indicating statistical dependence. This suggests that students aiming for higher education are significantly more likely to take extra paid classes.
+
+```{r include=FALSE}
+data$Promoted <- ifelse(data$G3 >= 10, 1, 0)
+logit_model <- glm(Promoted ~ schoolsup + paid + higher, 
+                   data = data, family = binomial)
+logit_model_summary <- summary(logit_model)
+logit_model_summary
+```
+
+Then, we compute the initial model shows that `higher` is a strong positive predictor `r round(logit_model_summary$coefficients["higheryes", "Pr(>|z|)"],4)` $< 0.05$, while `schoolsup` has a negative coefficient, highlighting the "support paradox" (struggling students receive more support).
+
+```{r include=FALSE}
+logit_improved <- glm(Promoted ~ schoolsup + paid + higher + failures + goout, 
+                      data = data, family = binomial)
+
+logit_improved_summary <- summary(logit_improved)
+```
+
+To improve the model's accuracy (with lower AIC = `r round(logit_improved_summary$aic,0)` instead of the previous `r round(logit_model_summary$aic,0)`), we introduce two variables related to background and social activity:
+\begin{itemize} 
+  \item \texttt{failures:} Number of past class failures. 
+  \item \texttt{goout:} Frequency of going out with friends. 
+\end{itemize}
+
+Now, the statistically significant coefficients are, in ascending order, `schoolsup`, `goout` and `failures`.
+
+```{r include=FALSE}
+library(pROC)
+
+prob_model <- predict(logit_model, type = "response")
+prob_improved <- predict(logit_improved, type = "response")
+
+roc_model <- roc(data$Promoted, prob_model)
+roc_improved <- roc(data$Promoted, prob_improved)
+```
+```{r echo=FALSE}
+plot(roc_model, col="red", main="ROC Curve Comparison", lwd=2)
+plot(roc_improved, col="blue", add=TRUE, lwd=2)
+legend("bottomright", 
+       legend=c(paste("Initial Model (AUC =", round(auc(roc_model), 2), ")"), 
+                paste("Improved Model (AUC =", round(auc(roc_improved), 2), ")")),
+       col=c("red", "blue"), lwd=2)
+```
+
+As mentioned above, this graph shows that the improved model shifts the curve toward the upper left corner of the box, which means that it is a better model than the previous one.
