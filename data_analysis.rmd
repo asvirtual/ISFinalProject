@@ -41,31 +41,64 @@ head(data)
 
 # Statistical Analysis
 
-## T-Test (Group Comparison)
+## ANOVA (Group Comparison: Multiple Groups)
 
-In this section, we compare the mean final grade (G3) between two different categories.
+ANOVA tests allow us to compare the mean final grade (G3) across three or more groups. This is particularly useful for examining categorical variables with multiple levels.
 
-### Hypothesis A (Technological)
+### Hypothesis A (Social/Classical)
 
-Is there a significant difference in grades between those who have Internet at home and those who do not?
-
-```{r}
-t.test(G3 ~ internet, data = data)
-```
-
-The results indicate that students with Internet access at home have a higher mean grade compared to those without. The T-test yields a p-value slightly above the 0.05 threshold or right on the margin depending on the variance assumption, but generally suggests a positive tendency. Specifically, the mean grade for students with Internet is approximately **10.6**, while for those without, it is **9.4**. 
-
-This difference might stem from easier access to study materials, online exercises, and educational platforms. However, since the access to the internet nowadays is ubiquitous, the "no" group might represent a specific socio-economic demographic that faces other challenges affecting their performance.
-
-### Hypothesis B (Sentimental)
-
-Do students in a romantic relationship have lower grades compared to single students?
+Does the mother's occupation influence the child's academic performance?
 
 ```{r}
-t.test(G3 ~ romantic, data = data)
+summary(aov(G3 ~ Mjob, data = data))
 ```
 
-Here we observe a statistically significant difference. The mean grade for single students is approximately **10.8**, whereas students in a romantic relationship have a mean grade of **9.6**. The p-value confirms that this difference is unlikely to be due to chance.
+The results show significant differences in mean grades across different mother's occupations (F = 3.75, p < 0.05). Specifically:
 
-This finding aligns with the "time allocation" theory: maintaining a romantic relationship requires time and emotional energy that might otherwise be dedicated to studying. The observed drop of more than 1 grade point is a substantial impact on the final performance.
+- **Health professionals**: Mean G3 = 12.15 (highest)
+- **Teachers**: Mean G3 = 11.05
+- **Services**: Mean G3 = 11.02
+- **Other**: Mean G3 = 9.82
+- **At home**: Mean G3 = 9.15 (lowest)
 
+The analysis suggests that having a mother in the health or education sector is associated with higher student performance. This could reflect:
+1. Higher educational attainment of such parents, leading to better support at home
+2. Greater awareness of the importance of education
+3. Potentially better socio-economic conditions
+
+In contrast, mothers who work "at home" or in "other" professions show children with lower grades, though this may also correlate with socio-economic factors not directly captured.
+
+### Hypothesis B (Behavioral)
+
+Does weekend alcohol consumption negatively impact grades?
+
+```{r}
+summary(aov(G3 ~ as.factor(Walc), data = data))
+```
+
+Interestingly, the results show **no significant difference** in grades across weekend alcohol consumption levels (F = 0.73, p > 0.05). The mean grades are relatively consistent:
+
+- Level 1 (very low): Mean G3 = 10.74
+- Level 2 (low): Mean G3 = 10.08
+- Level 3 (medium): Mean G3 = 10.73
+- Level 4 (high): Mean G3 = 9.69
+- Level 5 (very high): Mean G3 = 10.14
+
+While there is a slight downward trend at level 4, the overall variation is not statistically significant. This suggests that weekend alcohol consumption alone, without considering frequency or context, may not be a primary driver of academic performance differences in this dataset. However, it's worth noting that social context and peer dynamics (which may be correlated with alcohol use) could have confounding effects.
+
+### Hypothesis C (Travel/Logistical)
+
+Does travel time from home to school affect academic performance?
+
+```{r}
+summary(aov(G3 ~ traveltime, data = data))
+```
+
+The results show a marginally significant effect of travel time (F = 1.84, p $\approx$ 0.14), with a clear downward trend:
+
+- **1 hour or less**: Mean G3 = 10.78 (n=257)
+- **1-2 hours**: Mean G3 = 9.91 (n=107)
+- **2-3 hours**: Mean G3 = 9.26 (n=23)
+- **>3 hours**: Mean G3 = 8.75 (n=8)
+
+The data suggests a practical relationship: longer commutes are associated with lower grades. This could be due to fatigue, reduced study time after accounting for commute, or the stress of long travel. The effect becomes increasingly pronounced at the extremes (>3 hours), though the sample size is very small in this group.
