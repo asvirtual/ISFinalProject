@@ -50,7 +50,7 @@ A positive coefficient ($\beta_i > 0$) implies that as $X_i$ increases, the odds
 
 ### The Impact of Educational Support
 
-We aim to predict whether a student will be Promoted (G3 $\ge$ 10) or Fail (G3 $<$ 10).
+We aim to predict whether a student will be Promoted (G3 $\ge$ 10) or Fail (G3 $<$ 10) according to Portuguese grading system.
 
 The initial predictors selected, from a strictly academic point of view, are:
 \begin{itemize}
