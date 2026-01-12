@@ -8,6 +8,7 @@ output:
     toc: true
     fig_height: 6
     number_sections: true
+    extra_dependencies: ["longtable", "booktabs", "array"]
   html_document: 
     toc: true
 editor_options: 
@@ -48,13 +49,102 @@ We investigate whether common assumptions about student life hold statistical we
 
 To address these questions, this study employs a structured statistical approach ranging from Chi-Squared tests for independence and ANOVA for group comparisons, to Linear and Logistic Regression models for identifying significant predictors of the final grade.
 
+# Data description and exploration
 
-```{r}
+```{r include=FALSE}
 data <- read.csv("./data/student-mat.csv", sep=";")
 str(data)
 summary(data)
 head(data)
 ```
 
+The dataset was created based on school report cards relating to grades and number of absences, as well as questionnaires (with closed-ended questions), in order to supplement the previous information.
+In total, there are 395 observations for the mathematics dataset and 33 variables with no missing values. We have both categorical and discrete variables. 
+
+\begin{longtable}{p{2.5cm} p{11cm}}
+\textbf{Attribute} & \textbf{Description (Domain)} \\
+\hline
+\textbf{school}     & school (binary: Gabriel Pereira [GP] or Mousinho da Silveira [MS]) \\
+\textbf{sex}        & sex (binary: female [F] or male [M]) \\
+\textbf{age}        & age (numeric: from 15 to 22) \\
+\textbf{address}    & home address type (binary: urban [U] or rural [R]) \\
+\textbf{famsize}    & family size (binary: $\le$ 3 or $>$ 3) \\
+\textbf{Pstatus}    & parent's cohabitation status (binary: living together [T] or apart [A]) \\
+\textbf{Medu}       & mother's education level (numeric: none [0] to higher [4]) \\
+\textbf{Fedu}       & father's education level (numeric: none [0] to higher [4]) \\
+\textbf{Mjob}       & mother's job (nominal: among 5 possible choices) \\
+\textbf{Fjob}       & father's job (nominal: among 5 possible choices) \\
+\textbf{reason}     & reason to choose this school (nominal) \\
+\textbf{guardian}   & guardian (nominal: mother, father or other) \\
+\textbf{traveltime} & home to school travel time (numeric: 1 to 4) \\
+\textbf{studytime}  & weekly study time (numeric: 1 to 4) \\
+\textbf{failures}   & number of past class failures (numeric: $n$ if $1 \le n < 3$, else 4) \\
+\textbf{schoolsup}  & extra educational school support (binary: yes [Y] or no [N]) \\
+\textbf{famsup}     & family educational support (binary: yes [Y] or no [N]) \\
+\textbf{paid}       & extra paid classes (binary: yes [Y] or no [N]) \\
+\textbf{activities} & extra-curricular activities (binary: yes [Y] or no [N]) \\
+\textbf{nursery}    & attended nursery school (binary: yes [Y] or no [N]) \\
+\textbf{internet}   & Internet access at home (binary: yes [Y] or no [N]) \\
+\textbf{higher}     & wants to take higher education (binary: yes [Y] or no [N]) \\
+\textbf{romantic}   & with a romantic relationship (binary: yes [Y] or no [N]) \\
+\textbf{famrel}     & quality of family relationships (numeric: very bad [1] to excellent [5]) \\
+\textbf{freetime}   & free time after school (numeric: very low [1] to very high [5]) \\
+\textbf{goout}      & going out with friends (numeric: very low [1] to very high [5]) \\
+\textbf{Dalc}       & workday alcohol consumption (numeric: very low [1] to very high [5]) \\
+\textbf{Walc}       & weekend alcohol consumption (numeric: very low [1] to very high [5]) \\
+\textbf{health}     & current health status (numeric: very bad [1] to very good [5]) \\
+\textbf{absences}   & number of school absences (numeric: from 0 to 93) \\
+\textbf{G1}         & first period grade (numeric: from 0 to 20) \\
+\textbf{G2}         & second period grade (numeric: from 0 to 20) \\
+\textbf{G3}         & final grade (numeric: from 0 to 20) \\
+\end{longtable}
+
+We use a comprehensive approach, displaying histograms for numerical data and bar plots for categorical data. The labels above the bars indicate the relative proportion of each category.
+
+```{r echo=FALSE, fig.height=40, fig.width=25, echo=FALSE, message=FALSE, warning = FALSE}
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+
+plot_list <- list()
+
+for (col_name in names(data)[1:(ncol(data)-3)]) {
+  values <- data[[col_name]]
+  if (is.numeric(values)) {
+    p <- ggplot(data, aes(x = .data[[col_name]])) +
+      geom_histogram(fill = "gray", color = "black", bins = 20) +
+      theme_minimal(base_size = 24) +
+      labs(title = col_name, y = "Freq", x = "")
+  } else {
+    p <- ggplot(data, aes(x = .data[[col_name]])) +
+      geom_bar(aes(y = (after_stat(count))/sum(after_stat(count))), fill = "gray", color = "black") +
+      geom_text(aes(y = (after_stat(count))/sum(after_stat(count)), 
+                    label = round((after_stat(count))/sum(after_stat(count)), 2)), 
+                stat = "count", vjust = -0.5) +
+      theme_minimal(base_size = 24) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      labs(title = col_name, y = "Proportion", x = "")
+  }
+  plot_list[[col_name]] <- p
+}
+grid.arrange(grobs = plot_list, ncol = 4)
+```
+
+For the target variables (G1, G2, G3), we use box plots. This allows us to directly compare the distribution of votes over time. The graph below shows the median, the interquartile range and outliers (if are present).
+
+```{r echo=FALSE, fig.height=5, fig.width=10}
+library(tidyr)
+cols_indices <- (ncol(data)-2):ncol(data)
+cols_names <- names(data)[cols_indices]
+
+data_long <- data %>%
+  select(all_of(cols_names)) %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
+
+ggplot(data_long, aes(x = Variable, y = Value)) +
+  geom_boxplot(fill = "gray", color = "black") +
+  theme_minimal(base_size = 24) +
+  labs(y = "Grade", x = "")
+```
 
 # Bibliography
