@@ -16,7 +16,6 @@ editor_options:
     wrap: 80
   chunk_output_type: console
 bibliography: references.bib
-bibliography: references.bib
 ---
 
 ```{r setup, include=FALSE}
