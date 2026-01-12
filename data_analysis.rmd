@@ -326,3 +326,137 @@ plot(data$absences, data$G3,
      pch = 19, col = rgb(0,0,1,0.5))
 abline(lm(data$G3 ~ data$absences), col = "red")
 ```
+
+## Logistic Regression
+
+Logistic Regression is the standard statistical method for binary classification problems.
+It models the probability $\vartheta(X)=P(Y=1|X)$ that an event occurs as a function of independent variables $X$. Instead of fitting a straight line, it uses the logistic function to map the output between 0 and 1.
+
+The logistic function is defined as:
+$$\vartheta(X) = \frac{e^{\beta_0 + \beta_1 X_1 + \dots + \beta_k X_k}}{1 + e^{\beta_0 + \beta_1 X_1 + \dots + \beta_k X_k}}$$
+and the regression is expressed in terms of log-odds: $$\log\left(\frac{\vartheta(X)}{1-\vartheta(X)}\right) = \beta_0 + \beta_1 X_1 + \dots + \beta_k X_k$$
+Where $\beta_i$ are the coefficients of the model.
+
+A positive coefficient ($\beta_i > 0$) implies that as $X_i$ increases, the odds/probability of success increase. Conversely, a negative coefficient suggests a decrease in the probability of success.
+
+### The Impact of Educational Support
+
+We aim to predict whether a student will be Promoted (G3 $\ge$ 10) or Fail (G3 $<$ 10) according to Portuguese grading system.
+
+#### Initial predictors and multicollinearity
+
+The initial predictors selected, from a strictly academic point of view, are:
+\begin{itemize}
+    \item \texttt{schoolsup:} Extra educational support [Y/N].
+    \item \texttt{paid:} Extra paid classes within the course subject [Y/N].
+    \item \texttt{higher:} Wants to take higher education [Y/N].
+\end{itemize}
+
+Before computing the model, we check for multicollinearity among predictors (`schoolsup`, `paid`, `higher`). High correlation between predictors can inflate the variance of the coefficient estimates, making the model unstable. 
+
+```{r echo = FALSE}
+library(corrplot)
+binary_vars <- data[, c("schoolsup", "paid", "higher")]
+
+# cor accept only numeric variables: if value is "yes" -> 1, else -> 0
+binary_vars_num <- as.data.frame(lapply(binary_vars, function(x) ifelse(x == "yes", 1, 0)))
+cor_matrix <- cor(binary_vars_num, use = "complete.obs")
+corrplot(cor_matrix, method = "color", type = "upper", tl.cex = 0.7, addCoef.col = "black",title = "Correlation Matrix", number.cex = 0.6)
+```
+
+The plot shows low correlation for `schoolsup` vs `paid` and `schoolsup` vs `higher` (values close to 0). For `paid` vs `higher`, there is a moderate positive correlation (`r round(cor_matrix["paid", "higher"],2)`), confirming that students aiming for university are more likely to invest in paid classes. However, since the value is below critical thresholds ($ < 0.7$), we proceed with the regression.
+
+#### Models evaluation
+
+##### Initial selection
+
+```{r include=FALSE}
+data$Promoted <- ifelse(data$G3 >= 10, 1, 0)
+logit_model <- glm(Promoted ~ schoolsup + paid + higher, 
+                   data = data, family = binomial)
+logit_model_summary <- summary(logit_model)
+```
+
+The initial model reveals that higher is a significant positive predictor (`r round(logit_model_summary$coefficients["higheryes", "Pr(>|z|)"],4)` $< 0.05$), while `schoolsup` has a negative coefficient. This highlights the "support paradox": educational support is often a proxy for academic difficulty rather than a direct booster of success in the short term.
+
+```{r include=FALSE}
+logit_improved <- glm(Promoted ~ schoolsup + paid + higher + failures + goout, 
+                      data = data, family = binomial)
+
+logit_improved_summary <- summary(logit_improved)
+```
+
+To improve the model's accuracy (with lower AIC), we introduce two variables related to background and social activity:
+\begin{itemize} 
+  \item \texttt{failures:} Number of past class failures. 
+  \item \texttt{goout:} Frequency of going out with friends. 
+\end{itemize}
+
+Now, the statistically significant coefficients are, in ascending order, `schoolsup`, `goout` and `failures`.
+
+##### Validation via Stepwise Selection
+
+To validate our variable selection, we applied an automated stepwise selection algorithm (AIC-based) on an extended set of predictors.
+
+```{r include=FALSE}
+logit_full <- glm(Promoted ~ schoolsup + paid + higher + failures + goout + 
+                            absences + studytime + activities + nursery + internet + 
+                            address + Pstatus + famrel + freetime + health + sex + Dalc + Walc, 
+                            data = data, family = binomial)
+logit_stepwise <- step(logit_full, direction = "both", trace = 0)
+logit_stepwise_summary <- summary(logit_stepwise)
+```
+
+The algorithm converged to a model containing: `r paste(names(coef(logit_stepwise))[-1], collapse = ", ")`.
+
+Comparing the AIC scores:
+\begin{itemize} 
+  \item Manual Initial Model AIC: `r round(logit_model$aic,0)`
+  \item Manual Improved Model AIC: `r round(logit_improved$aic, 0)`
+  \item Stepwise Model AIC: `r round(logit_stepwise$aic, 0)` \end{itemize}
+  
+#### Data Refinement: Excluding Zero-Grades
+
+We observed that approximately 38 entries have a final grade (`G3`) of 0. In this context, a grade of 0 likely indicates students who were absent or dropped out, rather than a genuine low-performance assessment.
+We tested the "Improved Model" structure on a filtered dataset to assess performance on active students.
+
+```{r include=FALSE}
+data_filtered <- subset(data, G3 != 0)
+data_filtered$Promoted <- ifelse(data_filtered$G3 >= 10, 1, 0)
+logit_filtered <- glm(Promoted ~ schoolsup + failures + goout + paid + higher, 
+                      data = data_filtered, family = binomial)
+logit_filtered_summary <- summary(logit_filtered)
+```
+
+#### Comparison between models
+
+We compare the discriminative ability of all four models using the ROC Curve.
+
+```{r include=FALSE}
+library(pROC)
+
+prob_model <- predict(logit_model, type = "response")
+prob_improved <- predict(logit_improved, type = "response")
+prob_stepwise <- predict(logit_stepwise, type = "response")
+prob_filtered <- predict(logit_filtered, type = "response")
+
+roc_model <- roc(data$Promoted, prob_model)
+roc_improved <- roc(data$Promoted, prob_improved)
+roc_stepwise <- roc(data$Promoted, prob_stepwise)
+roc_filtered <- roc(data_filtered$Promoted, prob_filtered)
+```
+```{r message=FALSE, echo=FALSE}
+plot(roc_model, col="red", main="ROC Curve Comparison", lwd=2)
+plot(roc_improved, col="blue", add=TRUE, lwd=2)
+plot(roc_stepwise, col="green", add=TRUE, lwd=2)
+plot(roc_filtered, col="magenta", add=TRUE, lwd=2)
+legend("bottomright", 
+       legend=c(paste("Initial Model (AUC =", round(auc(roc_model), 2), ")"), 
+       paste("Improved Model (AUC =", round(auc(roc_improved), 2), ")"),
+       paste("Stepwise Model (AUC =", round(auc(roc_stepwise), 2), ")"),
+       paste("Filtered Model (AUC =", round(auc(roc_filtered), 2), ")")),
+       col=c("red", "blue", "green", "magenta"), lwd=2)
+```
+
+Visually, the graph illustrates a clear shift of the Improved Model's curve toward the top-left corner compared to the Initial Model, confirming a substantial gain in predictive accuracy. The performance of the Improved Model and the Stepwise model are widely consistent.
+Furthermore, the performance of the Filtered Model (AUC $\approx$ `r round(auc(roc_filtered), 2)`) remains highly comparable to the Improved Model (AUC $\approx$ `r round(auc(roc_improved), 2)`). This stability is a crucial finding: it demonstrates that our model is robust and does not rely solely on the easy classification of dropouts (`G3` $=0$) to achieve good results. It effectively distinguishes between passing and failing students.
