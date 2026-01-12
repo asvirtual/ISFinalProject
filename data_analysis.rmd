@@ -16,6 +16,7 @@ editor_options:
     wrap: 80
   chunk_output_type: console
 bibliography: references.bib
+bibliography: references.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -54,7 +55,9 @@ To address these questions, this study employs a structured statistical approach
 # Data description and exploration
 
 ```{r include=FALSE}
-data <- read.csv("./data/student-mat.csv", sep=";")
+# stringsAsFactors = TRUE permitts to interpret strings as factors
+# i.e. "yes" and "no" as factors and not as a string of characters
+data <- read.csv("./data/student-mat.csv", sep=";", stringsAsFactors = TRUE)
 str(data)
 summary(data)
 head(data)
@@ -149,4 +152,121 @@ ggplot(data_long, aes(x = Variable, y = Value)) +
   labs(y = "Grade", x = "")
 ```
 
-# Bibliography
+# Statistical analysis
+
+## Test of Independence
+
+To analyze the relationship between categorical variables, we employ a two-step statistical approach based on the Chi-square ($\chi^2$) Test and Fisher's Exact Test.
+
+The _Chi-square_ ($\chi^2$) test is used to assess whether a statistically significant association (dependency) exists between two categorical variables within a population by comparing the observed sample frequencies ($Observed$) against expected frequencies ($Expected$) calculated under the assumption of independence ($P(A) = P(A \mid B)$). 
+The test assumes random sampling and that all expected values in every cell of the contingency table are at least 5 [@chisquare].
+
+Our hypotheses are:
+\begin{itemize}
+  \item $H_0$: The variables are independent (no relationship)
+  \item $H_1$: The variables are dependent (there is a relationship)
+\end{itemize}
+
+The $\chi^2$ statistics measure the divergence between observed data and the null hypothesis, and is computed as: $$\chi^2=\sum \frac{(Observed-Expected)^2}{Expected}$$
+
+where the expected frequency for each cell is given by $$Expected = \frac{row\;total \; \times \; column\;total}{n}$$ and the degrees of freedom are calculated as: $$df=(number\;of\;rows-1)(number\;of\;columns-1)$$
+
+When the Chi-square assumption is violated (expected frequencies $< 5$), the approximation becomes unreliable. In such cases, we prefer Fischer's Exact Test. This test calculates the exact probability of the data and directly provides the Odds Ratio, allowing us to quantify the strength and direction of the association.
+
+For both tests, the decision is based on the p-value relative to the significance level ($\alpha=0.05$):
+\begin{itemize}
+  \item if \(p \leq \alpha\) reject the null hypothesis.
+  \item if \(p > \alpha\) cannot reject the null hypothesis.
+\end{itemize}
+
+### Parents Influence on Studies
+
+The objective of this analysis is to investigate whether parental education levels significantly influence a student's intention to pursue higher education (`higher`). 
+
+To address potential issues with low expected frequencies in specific categories and to obtain a clear measure of effect size (Odds Ratio), we also performed a Fisher's Exact Test on grouped data:
+\begin{itemize}
+  \item Low Education: Levels 0 (None), 1 (Primary 4th), and 2 (Primary 5th-9th).
+  \item High Education: Levels 3 (Secondary) and 4 (Higher).
+\end{itemize}
+
+#### Mother education level
+
+```{r include=FALSE}
+# 1. Chi-Square on full data
+table_mother <- table(data$Medu, data$higher)
+test_mother <- chisq.test(table_mother)
+# print(round(test_mother$expected, 2))
+
+# 2. Fisher on grouped data
+data$Medu_Level <- ifelse(data$Medu <= 2, "Low", "High")
+data$Medu_Level <- factor(data$Medu_Level, levels = c("Low", "High"))
+
+table_fisher_m <- table(data$Medu_Level, data$higher)
+test_fisher_m <- fisher.test(table_fisher_m)
+```
+
+The Chi-squared value is `r round(test_mother$statistic, 2)` with `r round(test_mother$parameter,3)` degrees of freedom. The p-value (`r round(test_mother$p.value,3)`) is well below the significance level ($\alpha = 0.05$), leading to the *rejection* of the null hypothesis.
+
+However, the reliability of the Chi-square approximation is limited by the presence of expected cell frequencies below 5 (the minimum value is `r round(min(test_mother$expected), 2)`) To address this issue and ensure robust inference, we aggregated the education levels into a binary format (Low vs. High) and performed Fisher's Exact Test. 
+
+Fisher's exact test shows a significant relationship ($p=$ `r round(test_fisher_m$p.value, 3)`). The estimated Odds Ratio suggests that students with highly educated fathers have odds of continuing their studies that are `r round(test_fisher_m$estimate, 1)` times greater than those with mothers having lower education levels.
+
+#### Father education level
+
+```{r include=FALSE}
+# 1. Chi-Square on full data
+table_father <- table(data$Fedu, data$higher)
+test_father <- chisq.test(table_father)
+# print(round(test_father$expected, 2))
+
+# 2. Fisher on grouped data
+data$Fedu_Level <- ifelse(data$Fedu <= 2, "Low", "High")
+data$Fedu_Level <- factor(data$Fedu_Level, levels = c("Low", "High"))
+
+table_fisher_f <- table(data$Fedu_Level, data$higher)
+test_fisher_f <- fisher.test(table_fisher_f)
+```
+
+The Chi-squared value is `r round(test_father$statistic, 2)` with `r round(test_father$parameter,3)` degrees of freedom. The p-value (`r round(test_father$p.value, 3)`) is well below the significance level ($\alpha = 0.05$), leading to the *rejection* of the null hypothesis.
+
+However, the reliability of the Chi-square approximation is limited by the presence of expected cell frequencies below 5 (the minimum value is `r round(min(test_father$expected), 2)`). To address this issue and ensure robust inference, we aggregated the education levels into a binary format (Low vs. High) and performed Fisher's Exact Test.
+
+Fisher's exact test shows a significant relationship ($p=$ `r round(test_fisher_f$p.value, 3)`). The estimated Odds Ratio suggests that students with highly educated fathers have odds of continuing their studies that are `r round(test_fisher_f$estimate, 1)` times greater than those with fathers having lower education levels.
+
+### Influence of Residence (Rural vs. Urban)
+
+We investigated whether living in an urban (`U`) or rural (`R`) area affects the student's intention to pursue higher education (`higher`).
+
+```{r include=FALSE}
+# Create contingency table
+table_address <- table(data$address, data$higher)
+
+# Chi-Square Test
+test_address <- chisq.test(table_address)
+print(test_address)
+
+# Fisher's Exact Test
+test_fisher_a <- fisher.test(table_address)
+```
+
+The reliability of the Chi-square approximation is limited by the presence of expected cell frequencies below 5 (the minimum value is `r round(min(test_address$expected), 2)`). 
+Fisher's exact test shows that the living area does *not affect* the student's intention to pursue higher education ($p=$ `r round(test_fisher_a$p.value, 3)`). 
+
+### Influence of Family Educational Support on Romantic status
+
+We investigated whether Family Educational Support affects the romantic status.
+
+```{r include=FALSE}
+# Create contingency table
+table_famsup_romantic <- table(data$famsup, data$romantic)
+
+# Chi-Square Test
+test_famsup_romantic <- chisq.test(table_famsup_romantic)
+test_famsup_romantic
+```
+
+The analysis shows *no statistically significant* relationship between family support and romantic relationships. The Chi-square p-value is `r round(test_famsup_romantic$p.value,3)`, indicating that the two variables are independent. So, there is no evidence to suggest that students who receive family educational support are more or less likely to be in a romantic relationship compared to those who do not.
+
+Unlike the previous cases, here all expected cell frequencies are well above 5 (the minimum expected value is `r round(min(test_famsup_romantic$expected), 2)`. Therefore, the standard Chi-square test is fully reliable and its assumptions are satisfied.
+
+
