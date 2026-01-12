@@ -49,6 +49,8 @@ We investigate whether common assumptions about student life hold statistical we
 
 To address these questions, this study employs a structured statistical approach ranging from Chi-Squared tests for independence and ANOVA for group comparisons, to Linear and Logistic Regression models for identifying significant predictors of the final grade.
 
+\newpage
+
 # Data description and exploration
 
 ```{r include=FALSE}
