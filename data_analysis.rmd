@@ -41,64 +41,50 @@ head(data)
 
 # Statistical Analysis
 
-## ANOVA (Group Comparison: Multiple Groups)
+## Linear Regression (Numerical Prediction)
 
-ANOVA tests allow us to compare the mean final grade (G3) across three or more groups. This is particularly useful for examining categorical variables with multiple levels.
+We aim to predict the final grade (G3) using linear regression models. This allows us to quantify the impact of specific variables while controlling for others.
 
-### Hypothesis A (Social/Classical)
+### Model A: "Effort"
 
-Does the mother's occupation influence the child's academic performance?
-
-```{r}
-summary(aov(G3 ~ Mjob, data = data))
-```
-
-The results show significant differences in mean grades across different mother's occupations (F = 3.75, p < 0.05). Specifically:
-
-- **Health professionals**: Mean G3 = 12.15 (highest)
-- **Teachers**: Mean G3 = 11.05
-- **Services**: Mean G3 = 11.02
-- **Other**: Mean G3 = 9.82
-- **At home**: Mean G3 = 9.15 (lowest)
-
-The analysis suggests that having a mother in the health or education sector is associated with higher student performance. This could reflect:
-1. Higher educational attainment of such parents, leading to better support at home
-2. Greater awareness of the importance of education
-3. Potentially better socio-economic conditions
-
-In contrast, mothers who work "at home" or in "other" professions show children with lower grades, though this may also correlate with socio-economic factors not directly captured.
-
-### Hypothesis B (Behavioral)
-
-Does weekend alcohol consumption negatively impact grades?
+This model attempts to explain performance based on student effort and academic history.
+$$ G3 = \beta_0 + \beta_1 \cdot \text{studytime} + \beta_2 \cdot \text{absences} + \beta_3 \cdot \text{failures} + \epsilon $$
 
 ```{r}
-summary(aov(G3 ~ as.factor(Walc), data = data))
+model_a <- lm(G3 ~ studytime + absences + failures, data = data)
+summary(model_a)
 ```
 
-Interestingly, the results show **no significant difference** in grades across weekend alcohol consumption levels (F = 0.73, p > 0.05). The mean grades are relatively consistent:
+**Interpretation:**
+The model explains approximately **13.5%** of the variance in grades ($R^2 \approx 0.135$).
+*   **Failures**: This is the most significant predictor ($t \approx -7.47$). Each past failure is associated with a decrease of about **2.2 points** in the final grade.
+*   **Studytime**: Surprisingly, this variable is not statistically significant in this specific model ($p > 0.05$), suggesting that simply accounting for hours studied (without considering quality or efficiency) does not strongly predict G3 when checking for past failures.
+*   **Absences**: Also not significant in this combination.
 
-- Level 1 (very low): Mean G3 = 10.74
-- Level 2 (low): Mean G3 = 10.08
-- Level 3 (medium): Mean G3 = 10.73
-- Level 4 (high): Mean G3 = 9.69
-- Level 5 (very high): Mean G3 = 10.14
+### Model B: "Background"
 
-While there is a slight downward trend at level 4, the overall variation is not statistically significant. This suggests that weekend alcohol consumption alone, without considering frequency or context, may not be a primary driver of academic performance differences in this dataset. However, it's worth noting that social context and peer dynamics (which may be correlated with alcohol use) could have confounding effects.
-
-### Hypothesis C (Travel/Logistical)
-
-Does travel time from home to school affect academic performance?
+This model focuses on family and social environment.
+$$ G3 = \beta_0 + \beta_1 \cdot \text{Medu} + \beta_2 \cdot \text{famrel} + \beta_3 \cdot \text{internet} + \epsilon $$
 
 ```{r}
-summary(aov(G3 ~ traveltime, data = data))
+model_b <- lm(G3 ~ Medu + famrel + internet, data = data)
+summary(model_b)
 ```
 
-The results show a marginally significant effect of travel time (F = 1.84, p $\approx$ 0.14), with a clear downward trend:
+**Interpretation:**
+This model has a lower explanatory power ($R^2 \approx 0.05$).
+*   **Medu (Mother's Education)**: This is a significant positive predictor ($t \approx 4.10$). Higher maternal education correlates with higher grades (approx. +0.86 points per level).
+*   **Famrel & Internet**: Neither family relationship quality nor internet access are statistically significant predictors in this model when Mother's Education is included.
 
-- **1 hour or less**: Mean G3 = 10.78 (n=257)
-- **1-2 hours**: Mean G3 = 9.91 (n=107)
-- **2-3 hours**: Mean G3 = 9.26 (n=23)
-- **>3 hours**: Mean G3 = 8.75 (n=8)
+### Step-wise Selection
 
-The data suggests a practical relationship: longer commutes are associated with lower grades. This could be due to fatigue, reduced study time after accounting for commute, or the stress of long travel. The effect becomes increasingly pronounced at the extremes (>3 hours), though the sample size is very small in this group.
+To find the most parsimonious model that explains the data best, we use a stepwise selection procedure (based on AIC) starting from a model including all the variables analyzed above.
+
+```{r}
+# Full model with candidates from A and B
+full_model <- lm(G3 ~ studytime + absences + failures + Medu + famrel + internet, data = data)
+best_model <- step(full_model, direction = "both", trace = 0)
+summary(best_model)
+```
+
+The stepwise procedure generally converges to a model retaining **Failures** and **Medu** as the core predictors. This reinforces that past academic history (failures) and socio-economic background (mother's education) are the strongest available drivers for the final grade in this dataset, outweighing self-reported study time or social habits.
