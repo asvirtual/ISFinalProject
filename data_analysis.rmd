@@ -43,7 +43,14 @@ head(data)
 
 ## ANOVA (Group Comparison: Multiple Groups)
 
-ANOVA tests allow us to compare the mean final grade (G3) across three or more groups. This is particularly useful for examining categorical variables with multiple levels.
+Analysis of Variance (ANOVA) is a statistical method used to test differences between two or more means. It generalizes the t-test to more than two groups by analyzing the variance *between* groups relative to the variance *within* groups.
+
+We test the following hypotheses:
+
+*   $H_0: \mu_1 = \mu_2 = \dots = \mu_k$ (All group means are equal)
+*   $H_1$: At least one group mean is different from the others
+
+The F-statistic determines the ratio of explained variance (between groups) to unexplained variance (within groups). A significant p-value ($< 0.05$) indicates that the factor has a statistically significant effect on the final grade.
 
 ### Hypothesis A (Social/Classical)
 
@@ -62,6 +69,7 @@ The results show significant differences in mean grades across different mother'
 - **At home**: Mean G3 = 9.15 (lowest)
 
 The analysis suggests that having a mother in the health or education sector is associated with higher student performance. This could reflect:
+
 1. Higher educational attainment of such parents, leading to better support at home
 2. Greater awareness of the importance of education
 3. Potentially better socio-economic conditions
