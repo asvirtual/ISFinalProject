@@ -9,6 +9,7 @@ output:
     fig_height: 6
     number_sections: true
     extra_dependencies: ["longtable", "booktabs", "array"]
+    toc_depth: 3
   html_document: 
     toc: true
 editor_options: 
@@ -25,7 +26,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Abstract
 
-This report analyzes the determinants of academic performance using the UCI "Student Performance Data Set," derived from Mathematics classes in two Portuguese schools (Gabriel Pereira and Mousinho da Silveira) and collected through school reports and questionnaires. The study aims to identify the demographic, social, and behavioral factors driving final grades (G3), using empirical evidence to validate or refuse common assumptions about student performance. Employing Chi-Squared tests, along with parametric tests and regression analysis, we investigate variables ranging from family background to social habits.
+
 
 # Introduction
 
@@ -56,7 +57,7 @@ The test statistic $t$ is calculated based on the difference in sample means rel
 
 Is there a significant difference in grades between those who have Internet at home and those who do not?
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 t.test(G3 ~ internet, data = data)
 ```
 
@@ -68,7 +69,7 @@ This difference might stem from easier access to study materials, online exercis
 
 Do students in a romantic relationship have lower grades compared to single students?
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 t.test(G3 ~ romantic, data = data)
 ```
 
@@ -91,7 +92,7 @@ The F-statistic determines the ratio of explained variance (between groups) to u
 
 Does the mother's occupation influence the child's academic performance?
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 summary(aov(G3 ~ Mjob, data = data))
 ```
 
@@ -115,7 +116,7 @@ In contrast, mothers who work "at home" or in "other" professions show children 
 
 Does weekend alcohol consumption negatively impact grades?
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 summary(aov(G3 ~ as.factor(Walc), data = data))
 ```
 
@@ -133,7 +134,7 @@ While there is a slight downward trend at level 4, the overall variation is not 
 
 Does travel time from home to school affect academic performance?
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 summary(aov(G3 ~ traveltime, data = data))
 ```
 
@@ -350,7 +351,7 @@ ggplot(results_refined, aes(x = Actual, y = Predicted)) +
   theme_minimal()
 ```
 
-### Key Observations & Conclusions
+We observe the following improvements:
 
 1.  **Model Validity**: The refined model's $R^2$ increased to **0.275** (from ~0.15), and the Q-Q plot now confirms that the normality assumption is largely satisfied for active students. This suggests our linear model is quite effective at predicting performance *given* that a student participates in the exam.
 
