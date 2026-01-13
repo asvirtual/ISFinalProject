@@ -60,7 +60,7 @@ Is there a significant difference in grades between those who have Internet at h
 t.test(G3 ~ internet, data = data)
 ```
 
-The results indicate that students with Internet access at home have a higher mean grade compared to those without. The T-test yields a p-value slightly above the 0.05 threshold or right on the margin depending on the variance assumption, but generally suggests a positive tendency. Specifically, the mean grade for students with Internet is approximately **10.6**, while for those without, it is **9.4**. 
+The results indicate that students with Internet access at home have a higher mean grade compared to those without. The T-test yields a p-value slightly below the 0.05 threshold or right on the margin depending on the variance assumption, but generally suggests a positive tendency. Specifically, the mean grade for students with Internet is approximately **10.6**, while for those without, it is **9.4**. 
 
 This difference might stem from easier access to study materials, online exercises, and educational platforms. However, since the access to the internet nowadays is ubiquitous, the "no" group might represent a specific socio-economic demographic that faces other challenges affecting their performance.
 
