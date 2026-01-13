@@ -1,3 +1,5 @@
 .lintr
 **/.DS_Store
 *.pdf
+.RData
+.Rhistory
