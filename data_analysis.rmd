@@ -41,6 +41,41 @@ head(data)
 
 # Statistical Analysis
 
+## T-Test (Group Comparison)
+
+The Student's t-test is a parametric statistical method used to determine if there is a significant difference between the means of two independent groups. It assumes that the data follows a normal distribution and that the observations are independent.
+
+We test the following hypotheses:
+
+*   $H_0: \mu_1 = \mu_2$ (There is no difference in mean grades between the groups)
+*   $H_1: \mu_1 \neq \mu_2$ (There is a significant difference in mean grades)
+
+The test statistic $t$ is calculated based on the difference in sample means relative to the standard error of the difference. If the resulting p-value is less than our significance level ($\alpha = 0.05$), we reject the null hypothesis.
+
+### Hypothesis A (Technological)
+
+Is there a significant difference in grades between those who have Internet at home and those who do not?
+
+```{r}
+t.test(G3 ~ internet, data = data)
+```
+
+The results indicate that students with Internet access at home have a higher mean grade compared to those without. The T-test yields a p-value slightly above the 0.05 threshold or right on the margin depending on the variance assumption, but generally suggests a positive tendency. Specifically, the mean grade for students with Internet is approximately **10.6**, while for those without, it is **9.4**. 
+
+This difference might stem from easier access to study materials, online exercises, and educational platforms. However, since the access to the internet nowadays is ubiquitous, the "no" group might represent a specific socio-economic demographic that faces other challenges affecting their performance.
+
+### Hypothesis B (Sentimental)
+
+Do students in a romantic relationship have lower grades compared to single students?
+
+```{r}
+t.test(G3 ~ romantic, data = data)
+```
+
+Here we observe a statistically significant difference. The mean grade for single students is approximately **10.8**, whereas students in a romantic relationship have a mean grade of **9.6**. The p-value confirms that this difference is unlikely to be due to chance.
+
+This finding aligns with the "time allocation" theory: maintaining a romantic relationship requires time and emotional energy that might otherwise be dedicated to studying. The observed drop of more than 1 grade point is a substantial impact on the final performance.
+
 ## ANOVA (Group Comparison: Multiple Groups)
 
 Analysis of Variance (ANOVA) is a statistical method used to test differences between two or more means. It generalizes the t-test to more than two groups by analyzing the variance *between* groups relative to the variance *within* groups.
@@ -110,3 +145,218 @@ The results show a marginally significant effect of travel time (F = 1.84, p $\a
 - **>3 hours**: Mean G3 = 8.75 (n=8)
 
 The data suggests a practical relationship: longer commutes are associated with lower grades. This could be due to fatigue, reduced study time after accounting for commute, or the stress of long travel. The effect becomes increasingly pronounced at the extremes (>3 hours), though the sample size is very small in this group.
+
+## Linear Regression (Numerical Prediction)
+
+Linear Regression is a statistical method used to model the relationship between a dependent variable $Y$ and one or more independent variables $X$. The goal is to find the linear equation that best predicts the value of the dependent variable based on the predictors.
+
+The general formula is:
+$$ Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \dots + \beta_k X_k + \epsilon $$
+Where:
+
+  -   $\beta_0$ is the intercept.
+  -   $\beta_i$ are the coefficients representing the change in $Y$ for a one-unit change in $X_i$.
+  -   $\epsilon$ is the error term (residuals).
+
+We aim to predict the final grade (**G3**) based on different sets of predictors.
+
+### Pre-analysis: Correlation Check
+
+Before building the models, it is crucial to examine the relationships between all candidate numeric variables to check for multicollinearity, which could distort valid statistical inferences. We examine the correlation between potential predictors including age, parental education, behavioral factors, and health.
+
+```{r, echo=FALSE}
+library(corrplot)
+numeric_columns <- c("age", "Medu", "Fedu", "traveltime", "studytime", "failures", 
+                     "famrel", "freetime", "goout", "Dalc", "Walc", "health", "absences")
+numeric_vars <- data[, numeric_columns]
+cor_matrix <- cor(numeric_vars, use = "complete.obs")
+corrplot(cor_matrix, method = "color", type = "upper", tl.cex = 0.7, addCoef.col = "black", number.cex = 0.6)
+```
+
+The correlation matrix reveals two notable clusters of collinearity:
+
+1.  **Parental Education**: `Medu` and `Fedu` have a strong positive correlation ($r \approx 0.62$). Since they carry similar information (socioeconomic status), including both might inflate standard errors. We will primarily use `Medu` as it often has a slightly stronger predictive power in educational contexts.
+2.  **Alcohol Consumption**: `Dalc` (workday) and `Walc` (weekend) are strongly correlated ($r \approx 0.65$). We might consider combining them or selecting one.
+
+Other correlations are generally moderate to weak ($|r| < 0.35$), suggesting that aside from these specific pairs, multicollinearity is manageable. The strongest negative correlation remains between `Medu` and `failures` ($\approx -0.24$).
+
+### Model A: "Academic Effort"
+
+This model focuses on student behavior and academic history. The hypothesis is that effort (`studytime`), attendance (`absences`), and past performance (`failures`) are the main drivers of the final grade.
+
+$$ G3 = \beta_0 + \beta_1 \cdot \text{studytime} + \beta_2 \cdot \text{absences} + \beta_3 \cdot \text{failures} + \epsilon $$
+
+```{r, echo=FALSE}
+model_a <- lm(G3 ~ studytime + absences + failures, data = data)
+summary(model_a)
+```
+
+**Interpretation:**
+
+*   **Model Fit**: The $R^2$ is **0.135**, meaning this model explains about 13.5% of the variability in the final grade.
+*   **Significance**:
+    *   **Failures ($\beta \approx -2.20$)**: Highly significant ($p < 0.001$). Each past failure reduces the expected final grade by over 2 points.
+    *   **Studytime**: Not significant ($p = 0.41$). Surprisingly, self-reported study time does not directly predict G3 when controlling for failures.
+    *   **Absences**: Not significant.
+
+### Model B: "Background & Environment"
+
+This model tests the "Nature/Nurture" hypothesis: that family background and resources determine success.
+
+$$ G3 = \beta_0 + \beta_1 \cdot \text{Medu} + \beta_2 \cdot \text{famrel} + \beta_3 \cdot \text{internet} + \epsilon $$
+
+```{r, echo=FALSE}
+model_b <- lm(G3 ~ Medu + famrel + internet, data = data)
+summary(model_b)
+```
+
+**Interpretation:**
+
+*   **Model Fit**: The $R^2$ is only **0.053** (5.3%). This model performs worse than the "Effort" model.
+*   **Significance**:
+    *   **Medu ($\beta \approx 0.86$)**: Significant ($p < 0.001$). Mother's education is a strong proxy for student success.
+    *   **Internet/Famrel**: Neither are statistically significant predictors in this specific combination.
+
+### Step-wise Selection (Optimization)
+
+To find the most parsimonious model (the "Best Fit"), we use a stepwise selection procedure. This algorithm iteratively adds or removes variables to balance model fit against complexity. We start with a **Full Model** containing all potential predictors (excluding the intermediate grades G1 and G2 to focus on socio-demographic drivers).
+
+```{r, echo=FALSE}
+# Full model with all variables except G1 and G2
+full_model <- lm(G3 ~ . - G1 - G2, data = data)
+best_model <- step(full_model, direction = "both", trace = 0)
+
+# Extract coefficients
+coefs_table <- summary(best_model)$coefficients
+
+# Filter to show only significant predictors (p < 0.05) 
+# and remove the Intercept for a cleaner view of drivers
+significant_preds <- coefs_table[coefs_table[, "Pr(>|t|)"] < 0.05 & rownames(coefs_table) != "(Intercept)", ]
+
+# formatting the table
+knitr::kable(significant_preds[, c("Estimate", "Pr(>|t|)")], 
+             digits = 4, 
+             caption = "Significant Predictors Selected by Stepwise Model")
+```
+
+The stepwise algorithm selects a model that includes **Failures**, **Mother's Job**, **Family Relationship**, **Free time**, **Absences**, and **Mother's Education**.
+This confirms that academic history (**failures**) is the strongest driver, but family background (**mother's job/education**) and behavior (**absences/go out**) also play significant roles.
+
+### Model Diagnostics: The "Zero" Problem
+
+To validate our "Best Fit" model, we perform diagnostic checks on the residuals.
+
+#### Normality of Residuals (Q-Q Plot)
+
+The linear regression model assumes that the residuals (errors) are normally distributed.
+
+```{r fig.height=5, fig.width=6, fig.align="center", echo=FALSE}
+library(ggplot2)
+
+# Extract residuals
+residuals_df <- data.frame(residuals = residuals(best_model))
+
+# Create Q-Q Plot with ggplot2
+ggplot(residuals_df, aes(sample = residuals)) +
+  geom_qq(color = "steelblue", alpha = 0.6) +
+  geom_qq_line(color = "red", linetype = "dashed", linewidth = 1) +
+  labs(title = "Normal Q-Q Plot (Full Data)",
+       subtitle = "Notice the deviation in the lower tail",
+       x = "Theoretical Quantiles",
+       y = "Sample Quantiles") +
+  theme_minimal()
+```
+
+**Interpretation:**
+Most points follow the line, but there is a **significant deviation in the lower tail**. This indicates that the residuals are not perfectly normal. This is primarily due to the presence of students with a grade of **0**. A grade of 0 in this dataset is often a symbolic value indicating data about an **administrative failure** (dropout or missed exam), rather than an **academic failure** (insufficient grade between 1 and 9).
+
+Our model consistently **overestimates** these grades (predicting e.g., a 8 or 9 when the actual is 0), leading to large negative residuals.
+
+#### Actual vs Predicted
+
+```{r fig.height=5, fig.width=6, fig.align="center", echo=FALSE}
+# Create a dataframe with predictions
+predictions <- predict(best_model)
+results <- data.frame(Actual = data$G3, Predicted = predictions)
+
+# Plot Actual vs Predicted with Jitter to show overlapping points
+ggplot(results, aes(x = Actual, y = Predicted)) +
+  geom_jitter(color = "steelblue", alpha = 0.6, width = 0.2, height = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "darkred", linetype = "dashed", linewidth = 1) +
+  labs(title = "Actual vs Predicted Grades (Full Data)",
+       subtitle = "Model struggles with the 0-grade cluster",
+       x = "Actual Grade",
+       y = "Predicted Grade") +
+  coord_fixed(ratio = 1, xlim = c(0, 20), ylim = c(0, 20)) +
+  theme_minimal()
+```
+
+The plot clearly shows the cluster of points at $Actual=0$ where predictions are much higher. This confirms that "administrative failure" (0) is a distinct event from "academic failure" (low grade), and treating them as a continuous scale introduces noise.
+
+### Refining the Model: Assessing Non-Zero Grades
+
+Since we identified that 0 grades are structural anomalies (dropouts), we refine our Linear Regression model to focus only on active students who received a grade ($G3 > 0$). We retrain the same model structure on this subset to assess its real predictive power for academic performance.
+
+```{r, echo=FALSE}
+# Filter for non-zero grades
+data_nonzero <- subset(data, G3 > 0)
+
+# Retrain the "best_model" structure on the filtered data
+refined_model <- update(best_model, data = data_nonzero)
+# summary(refined_model)
+
+# Extract coefficients
+coefs_table <- summary(refined_model)$coefficients
+# Filter to show only significant predictors (p < 0.05) 
+# and remove the Intercept for a cleaner view of drivers
+significant_preds <- coefs_table[coefs_table[, "Pr(>|t|)"] < 0.05 & rownames(coefs_table) != "(Intercept)", ]
+
+# formatting the table
+knitr::kable(significant_preds[, c("Estimate", "Pr(>|t|)")], 
+             digits = 4, 
+             caption = "Significant Predictors Selected by Stepwise Model")
+```
+
+**Diagnostics of Refined Model:**
+
+```{r fig.height=5, fig.width=6, fig.align="center", echo=FALSE}
+residuals_refined <- data.frame(residuals = residuals(refined_model))
+
+ggplot(residuals_refined, aes(sample = residuals)) +
+  geom_qq(color = "forestgreen", alpha = 0.6) +
+  geom_qq_line(color = "red", linetype = "dashed", linewidth = 1) +
+  labs(title = "Normal Q-Q Plot (G3 > 0 Only)",
+       subtitle = "Normality assumption is much better satisfied",
+       x = "Theoretical Quantiles",
+       y = "Sample Quantiles") +
+  theme_minimal()
+```
+
+We also visualize the prediction accuracy for this refined subset:
+
+```{r fig.height=5, fig.width=6, fig.align="center", echo=FALSE}
+# Predictions for the refined model
+pred_refined <- predict(refined_model)
+results_refined <- data.frame(Actual = data_nonzero$G3, Predicted = pred_refined)
+
+ggplot(results_refined, aes(x = Actual, y = Predicted)) +
+  geom_jitter(color = "forestgreen", alpha = 0.6, width = 0.2, height = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "darkred", linetype = "dashed", linewidth = 1) +
+  labs(title = "Actual vs Predicted Grades (Refined Model)",
+       subtitle = "Prediction pattern is closer to the ideal line",
+       x = "Actual Grade (G3 > 0)",
+       y = "Predicted Grade") +
+  coord_fixed(ratio = 1, xlim = c(0, 20), ylim = c(0, 20)) +
+  theme_minimal()
+```
+
+### Key Observations & Conclusions
+
+1.  **Model Validity**: The refined model's $R^2$ increased to **0.275** (from ~0.15), and the Q-Q plot now confirms that the normality assumption is largely satisfied for active students. This suggests our linear model is quite effective at predicting performance *given* that a student participates in the exam.
+
+2.  **The "Absences" Flip**: In the full model (including zeros), absences appeared to have a positive or negligible coefficient. In the refined model, the coefficient flips to **negative ($\approx -0.055$)**. This proves the 0-grade noise was masking the true negative impact of missing class: once we remove dropouts, we see that for active students, more absences lead to lower grades.
+
+3.  **Selection Bias in School Support**: The strong negative coefficient for school support ($\beta \approx -2.09$, $p < 0.001$) suggests that this variable acts as a **proxy for struggling students**. It is not that support *causes* lower grades, but rather that support is given primarily to students already at risk of lower performance.
+
+**Final Summary**:
+Linear Regression works well for **scoring** (predicting the exact grade of a regularly attending student), driven by *Academic History (Failures)*, *Family Background (Medu)*, and *Behavior (Absences)*. However, the event of **administrative failure (Grade 0)** is a structural break that cannot be modeled continuously.
