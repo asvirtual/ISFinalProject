@@ -39,18 +39,18 @@ While previous studies on this dataset have primarily focused on minimizing pred
 
 The dataset, sourced from the UCI "Student Performance Data Set" [@cortez2008student], combines administrative records with questionnaire responses from secondary schools in Portugal, Gabriel Pereira and Mousinho da Silveira, collected during the 2005–2006 academic year. In particular, this report focuses on Mathematics subject.
 
-To contextualize the dataset's timeframe, the latest PISA 2022 National Report by IAVE [@iave2023pisa], indicates thta student performance in Portugal has increased in the first decades of the 2000s. However, in recent years a downward trend has been observerd, although performance remains aligned with the OECD average.
+To contextualize the dataset's timeframe, the latest PISA 2022 National Report by IAVE [@iave2023pisa], indicates that the student performance in Portugal has increased in the first decades of the 2000s. However, in recent years a downward trend has been observerd, although performance remains aligned with the OECD (Organisation for Economic Co-operation and Development) average.
 
 ![Evolution of average mathematics scores between 2000 and 2022: IAVE, based on OECD (2023)](./data/IAVE2023.png)
 
-We investigate whether common assumptions about student life hold statistical weight. The idea behind this analysis is to provide the statistical basis for answering the following questions:
+We investigate whether common assumptions about student life hold statistical weight. The idea behind this analysis is to provide the statistical basis for answering some questions, like the following ones:
 \begin{itemize}
   \item How do social habits (e.g., alcohol consumption, romantic relationships) interact with academic results?
   \item Do family background factors (e.g., parents' education) significantly stratify student performance?
   \item Can we quantify the impact of effort (study time) versus external support (paid classes) on the final Mathematics grade (G3)?
 \end{itemize}
 
-To address these questions, this study employs a structured statistical approach ranging from Chi-Squared tests for independence and ANOVA for group comparisons, to Linear and Logistic Regression models for identifying significant predictors of the final grade.
+To address these questions, this study employs a structured statistical approach ranging from tests for independence and ANOVA for group comparisons, to Linear and Logistic Regression models for identifying significant predictors of the final grade.
 
 \newpage
 
@@ -128,6 +128,7 @@ for (col_name in names(data)[1:(ncol(data)-3)]) {
       geom_text(aes(y = (after_stat(count))/sum(after_stat(count)), 
                     label = round((after_stat(count))/sum(after_stat(count)), 2)), 
                 stat = "count", vjust = -0.5) +
+      scale_y_continuous(expand = expansion(mult = c(0, 0.15))) +
       theme_minimal(base_size = 24) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       labs(title = col_name, y = "Proportion", x = "")
@@ -196,6 +197,58 @@ test_fisher_a <- fisher.test(table_address)
 ```
 
 Fisher's Exact Test confirms a strong relationship for parents: students with highly educated mothers have odds of continuing studies `r round(test_fisher_m$estimate, 1)` times greater ($p=$ `r round(test_fisher_m$p.value, 3)`), with similar results for fathers (OR = `r round(test_fisher_f$estimate, 1)`, $p=$ `r round(test_fisher_f$p.value, 3)`). In contrast, residence type (Urban vs. Rural) shows no significant effect ($p=$ `r round(test_fisher_a$p.value, 3)`). 
+
+## Test of Correlation
+
+Correlation analysis quantifies the strength and direction of relationships between numerical variables, serving as the numerical equivalent to categorical tests like Chi-Squared. The choice of metric depends on data distribution: the standard Pearson coefficient ($r$) is used for normally distributed data, while the non-parametric Spearman coefficient ($r_S$) is preferred when the normality assumption is not met.
+
+The value of the coefficient is inside the range $[-1,+1]$:
+\begin{itemize}
+    \item $r, r_S = 1$: perfect positive correlation
+    \item $r, r_S = - 1$: perfect negative correlation
+    \item $r, r_S = 0$: no correlation.
+\end{itemize}
+
+The test verifies the following hypotheses:
+\begin{itemize}
+    \item $H_0$: variables are not correlated ($r, r_S = 0$)
+    \item $H_1$: there is a correlation between variables ($r, r_S \neq 0$).
+\end{itemize}
+
+### Impact of Absences on Final Grade
+
+We hypothesize a negative relationship between the number of school absences (`absences`) and the final grade (`G3`). A high number of absences could affect the ability to keep up with the study program and lower performance.
+
+To choose the most appropriate correlation test, we have to verify the distribution of the `absences` variable. In fact, the Pearson Correlation test assumes that data are drawn from a normal distribution.
+
+```{r echo=FALSE}
+hist(data$absences, main="Distribution of Absences", xlab="Number of Absences")
+shapiro_test <- shapiro.test(data$absences)
+```
+
+As shown in the histogram, the variable follows a right-skewed distribution (strongly asymmetric). 
+
+Then, the Shapiro-Wilk's test returns a p-value = `r shapiro_test$p.value` lower than $\alpha = 0.05$ that confirms non-normality. 
+Given this information, it is better to compute a Spearman test, which does not require a normal distribution of the data.
+
+```{r include=FALSE}
+cor_spearman_absences <- cor.test(data$absences, data$G3, method = "spearman", exact = FALSE)
+```
+
+After computing the test, we can see that the correlation factor from Spearman is `r round(cor_spearman_absences$estimate, 3)`.
+
+Due to the presence of ties in the `absences` and `G3` variables, the exact p-value for Spearman's $r_S$ could not be computed. Therefore, the standard asymptotic approximation was used `r round(cor_spearman_absences$p.value, 3)`. Since this value is very high, we cannot reject $H_0$. Statistically, this indicates no significant correlation between absences and the final grade in this dataset. This finding refutes our initial hypothesis that higher absences lead to lower grades.
+
+Using a scatterplot, we can visualize the trend analyzed by the correlation test.
+
+```{r echo=FALSE}
+plot(data$absences, data$G3, 
+     main = "Absences vs Final Grade (G3)",
+     xlab = "Number of Absences", 
+     ylab = "Final Grade (G3)", 
+     pch = 19, col = rgb(0,0,1,0.5))
+abline(lm(data$G3 ~ data$absences), col = "red")
+```
 
 ## T-Test (Group Comparison)
 
