@@ -278,7 +278,7 @@ Is there a significant difference in grades between those who have Internet at h
 t.test(G3 ~ internet, data = data)
 ```
 
-The results indicate that students with Internet access at home have a higher mean grade compared to those without. The T-test yields a p-value slightly below the 0.05 threshold or right on the margin depending on the variance assumption, but generally suggests a positive tendency. Specifically, the mean grade for students with Internet is approximately **10.6**, while for those without, it is **9.4**. 
+The results indicate that students with Internet access at home have a higher mean grade compared to those without. The T-test yields a p-value of `r round(t.test(G3 ~ internet, data = data)$p.value, 5)` slightly below the 0.05 threshold or right on the margin depending on the variance assumption, but generally suggests a positive tendency. Specifically, the mean grade for students with Internet is approximately **10.6**, while for those without, it is **9.4**. 
 
 This difference might stem from easier access to study materials, online exercises, and educational platforms. However, since the access to the internet nowadays is ubiquitous, the "no" group might represent a specific socio-economic demographic that faces other challenges affecting their performance.
 
@@ -290,7 +290,7 @@ Do students in a romantic relationship have lower grades compared to single stud
 t.test(G3 ~ romantic, data = data)
 ```
 
-Here we observe a statistically significant difference. The mean grade for single students is approximately **10.8**, whereas students in a romantic relationship have a mean grade of **9.6**. $p \approx 0.013$ confirms that this difference is unlikely to be due to chance.
+Here we observe a statistically significant difference. The mean grade for single students is approximately **10.8**, whereas students in a romantic relationship have a mean grade of **9.6**. $p \approx `r round(t.test(G3 ~ romantic, data = data)$p.value, 3)`$ confirms that this difference is unlikely to be due to chance.
 
 This finding aligns with the "time allocation" theory: maintaining a romantic relationship requires time and emotional energy that might otherwise be dedicated to studying. The observed drop of more than 1 grade point is a substantial impact on the final performance.
 
@@ -309,7 +309,7 @@ aov_travel <- summary(aov(G3 ~ traveltime, data = data))[[1]]
 
 **Alcohol Consumption:** Surprisingly, weekend alcohol consumption (`Walc`) showed **no significant difference** in grades (F = `r round(aov_walc["as.factor(Walc)", "F value"], 2)`, p > 0.05). While heavy drinkers show a slight dip, the variance is not statistically distinct, suggesting that moderate social habits may not be the primary driver of failure when isolated.
 
-**Travel Time:** There is a marginally significant effect of travel time (p $\approx$ 0.14), with a clear downward trend. Students with <15 min travel time average 10.8, while those with >3 hours average 8.75. Long commutes likely reduce available study time and increase fatigue.
+**Travel Time:** There is a marginally significant effect of travel time (p $\approx$ `r round(aov_travel["traveltime", "Pr(>F)"], 3)`), with a clear downward trend. Students with <15 min travel time average 10.8, while those with >3 hours average 8.75. Long commutes likely reduce available study time and increase fatigue.
 
 ## Logistic Regression
 
@@ -345,6 +345,9 @@ logit_full <- glm(Promoted ~ schoolsup + paid + higher + failures + goout +
                             address + Pstatus + famrel + freetime + health + sex + Dalc + Walc, 
                             data = data, family = binomial)
 logit_stepwise <- step(logit_full, direction = "both", trace = 0)
+
+data["Promoted"] <- NULL  # Clean up
+data_filtered["Promoted"] <- NULL  # Clean up
 ```
 
 The **Initial Model** showed `higher` as a positive predictor, but the **Improved Model** significantly lowered the AIC (from `r round(logit_model$aic,0)` to `r round(logit_improved$aic, 0)`), highlighting the critical negative impact of past `failures`. The **Stepwise** algorithm converged to the same set of predictors as our **Improved Model** (plus `sex`), confirming the robustness of our manual selection.
@@ -472,7 +475,7 @@ p3 <- ggplot(residuals_refined, aes(sample = residuals)) +
   geom_qq(color = "forestgreen", alpha = 0.6) +
   geom_qq_line(color = "red", linetype = "dashed", linewidth = 1) +
   labs(title = "Normal Q-Q Plot (Refined)",
-       subtitle = "Normality assumption more satisfied",
+       subtitle = "Normality assumption satisfied",
        x = "Theoretical Quantiles", y = "Standardized Residuals") +
   theme_minimal()
 
