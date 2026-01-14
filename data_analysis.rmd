@@ -175,101 +175,27 @@ where the expected frequency for each cell is given by $$Expected = \frac{row\;t
 
 When the Chi-square assumption is violated (expected frequencies $< 5$), the approximation becomes unreliable. In such cases, we prefer Fischer's Exact Test. This test calculates the exact probability of the data and directly provides the Odds Ratio, allowing us to quantify the strength and direction of the association.
 
-For both tests, the decision is based on the p-value relative to the significance level ($\alpha=0.05$):
-\begin{itemize}
-  \item if \(p \leq \alpha\) reject the null hypothesis.
-  \item if \(p > \alpha\) cannot reject the null hypothesis.
-\end{itemize}
+### Family and Residence Influence
 
-### Parents Influence on Studies
-
-The objective of this analysis is to investigate whether parental education levels significantly influence a student's intention to pursue higher education (`higher`). 
-
-To address potential issues with low expected frequencies in specific categories and to obtain a clear measure of effect size (Odds Ratio), we also performed a Fisher's Exact Test on grouped data:
-\begin{itemize}
-  \item Low Education: Levels 0 (None), 1 (Primary 4th), and 2 (Primary 5th-9th).
-  \item High Education: Levels 3 (Secondary) and 4 (Higher).
-\end{itemize}
-
-#### Mother education level
+We investigated whether parental education (`Medu`, `Fedu`) or residence type (`address`) influences the intention to pursue higher education (`higher`). Given some low expected frequencies, we supported Chi-square tests with Fisher's Exact Tests.
 
 ```{r include=FALSE}
-# 1. Chi-Square on full data
+# Mother Variables
 table_mother <- table(data$Medu, data$higher)
-test_mother <- chisq.test(table_mother)
-# print(round(test_mother$expected, 2))
+data$Medu_Level <- factor(ifelse(data$Medu <= 2, "Low", "High"), levels = c("Low", "High"))
+test_fisher_m <- fisher.test(table(data$Medu_Level, data$higher))
 
-# 2. Fisher on grouped data
-data$Medu_Level <- ifelse(data$Medu <= 2, "Low", "High")
-data$Medu_Level <- factor(data$Medu_Level, levels = c("Low", "High"))
-
-table_fisher_m <- table(data$Medu_Level, data$higher)
-test_fisher_m <- fisher.test(table_fisher_m)
-```
-
-The Chi-squared value is `r round(test_mother$statistic, 2)` with `r round(test_mother$parameter,3)` degrees of freedom. The p-value (`r round(test_mother$p.value,3)`) is well below the significance level ($\alpha = 0.05$), leading to the *rejection* of the null hypothesis.
-
-However, the reliability of the Chi-square approximation is limited by the presence of expected cell frequencies below 5 (the minimum value is `r round(min(test_mother$expected), 2)`) To address this issue and ensure robust inference, we aggregated the education levels into a binary format (Low vs. High) and performed Fisher's Exact Test. 
-
-Fisher's exact test shows a significant relationship ($p=$ `r round(test_fisher_m$p.value, 3)`). The estimated Odds Ratio suggests that students with highly educated fathers have odds of continuing their studies that are `r round(test_fisher_m$estimate, 1)` times greater than those with mothers having lower education levels.
-
-#### Father education level
-
-```{r include=FALSE}
-# 1. Chi-Square on full data
+# Father Variables
 table_father <- table(data$Fedu, data$higher)
-test_father <- chisq.test(table_father)
-# print(round(test_father$expected, 2))
+data$Fedu_Level <- factor(ifelse(data$Fedu <= 2, "Low", "High"), levels = c("Low", "High"))
+test_fisher_f <- fisher.test(table(data$Fedu_Level, data$higher))
 
-# 2. Fisher on grouped data
-data$Fedu_Level <- ifelse(data$Fedu <= 2, "Low", "High")
-data$Fedu_Level <- factor(data$Fedu_Level, levels = c("Low", "High"))
-
-table_fisher_f <- table(data$Fedu_Level, data$higher)
-test_fisher_f <- fisher.test(table_fisher_f)
-```
-
-The Chi-squared value is `r round(test_father$statistic, 2)` with `r round(test_father$parameter,3)` degrees of freedom. The p-value (`r round(test_father$p.value, 3)`) is well below the significance level ($\alpha = 0.05$), leading to the *rejection* of the null hypothesis.
-
-However, the reliability of the Chi-square approximation is limited by the presence of expected cell frequencies below 5 (the minimum value is `r round(min(test_father$expected), 2)`). To address this issue and ensure robust inference, we aggregated the education levels into a binary format (Low vs. High) and performed Fisher's Exact Test.
-
-Fisher's exact test shows a significant relationship ($p=$ `r round(test_fisher_f$p.value, 3)`). The estimated Odds Ratio suggests that students with highly educated fathers have odds of continuing their studies that are `r round(test_fisher_f$estimate, 1)` times greater than those with fathers having lower education levels.
-
-### Influence of Residence (Rural vs. Urban)
-
-We investigated whether living in an urban (`U`) or rural (`R`) area affects the student's intention to pursue higher education (`higher`).
-
-```{r include=FALSE}
-# Create contingency table
+# Residence
 table_address <- table(data$address, data$higher)
-
-# Chi-Square Test
-test_address <- chisq.test(table_address)
-print(test_address)
-
-# Fisher's Exact Test
 test_fisher_a <- fisher.test(table_address)
 ```
 
-The reliability of the Chi-square approximation is limited by the presence of expected cell frequencies below 5 (the minimum value is `r round(min(test_address$expected), 2)`). 
-Fisher's exact test shows that the living area does *not affect* the student's intention to pursue higher education ($p=$ `r round(test_fisher_a$p.value, 3)`). 
-
-### Influence of Family Educational Support on Romantic status
-
-We investigated whether Family Educational Support affects the romantic status.
-
-```{r include=FALSE}
-# Create contingency table
-table_famsup_romantic <- table(data$famsup, data$romantic)
-
-# Chi-Square Test
-test_famsup_romantic <- chisq.test(table_famsup_romantic)
-test_famsup_romantic
-```
-
-The analysis shows *no statistically significant* relationship between family support and romantic relationships. The Chi-square p-value is `r round(test_famsup_romantic$p.value,3)`, indicating that the two variables are independent. So, there is no evidence to suggest that students who receive family educational support are more or less likely to be in a romantic relationship compared to those who do not.
-
-Unlike the previous cases, here all expected cell frequencies are well above 5 (the minimum expected value is `r round(min(test_famsup_romantic$expected), 2)`. Therefore, the standard Chi-square test is fully reliable and its assumptions are satisfied.
+Fisher's Exact Test confirms a strong relationship for parents: students with highly educated mothers have odds of continuing studies `r round(test_fisher_m$estimate, 1)` times greater ($p=$ `r round(test_fisher_m$p.value, 3)`), with similar results for fathers (OR = `r round(test_fisher_f$estimate, 1)`, $p=$ `r round(test_fisher_f$p.value, 3)`). In contrast, residence type (Urban vs. Rural) shows no significant effect ($p=$ `r round(test_fisher_a$p.value, 3)`). 
 
 ## T-Test (Group Comparison)
 
@@ -302,79 +228,109 @@ Do students in a romantic relationship have lower grades compared to single stud
 t.test(G3 ~ romantic, data = data)
 ```
 
-Here we observe a statistically significant difference. The mean grade for single students is approximately **10.8**, whereas students in a romantic relationship have a mean grade of **9.6**. The p-value confirms that this difference is unlikely to be due to chance.
+Here we observe a statistically significant difference. The mean grade for single students is approximately **10.8**, whereas students in a romantic relationship have a mean grade of **9.6**. $p \approx 0.013$ confirms that this difference is unlikely to be due to chance.
 
 This finding aligns with the "time allocation" theory: maintaining a romantic relationship requires time and emotional energy that might otherwise be dedicated to studying. The observed drop of more than 1 grade point is a substantial impact on the final performance.
 
 ## ANOVA (Group Comparison: Multiple Groups)
 
-Analysis of Variance (ANOVA) is a statistical method used to test differences between two or more means. It generalizes the t-test to more than two groups by analyzing the variance *between* groups relative to the variance *within* groups.
-
-We test the following hypotheses:
-
-*   $H_0: \mu_1 = \mu_2 = \dots = \mu_k$ (All group means are equal)
-*   $H_1$: At least one group mean is different from the others
-
-The F-statistic determines the ratio of explained variance (between groups) to unexplained variance (within groups). A significant p-value ($< 0.05$) indicates that the factor has a statistically significant effect on the final grade.
-
-### Hypothesis A (Social/Classical)
-
-Does the mother's occupation influence the child's academic performance?
+Analysis of Variance (ANOVA) was used to test differences between means of more than two groups ($H_0: \mu_1 = \dots = \mu_k$).
 
 ```{r, echo=FALSE, include=FALSE}
-summary(aov(G3 ~ Mjob, data = data))
+# Models for inline reporting
+aov_mjob <- summary(aov(G3 ~ Mjob, data = data))[[1]]
+aov_walc <- summary(aov(G3 ~ as.factor(Walc), data = data))[[1]]
+aov_travel <- summary(aov(G3 ~ traveltime, data = data))[[1]]
 ```
 
-The results show significant differences in mean grades across different mother's occupations (F = 3.75, p < 0.05). Specifically:
+**Mother's Occupation:** We found significant differences in mean grades (F = `r round(aov_mjob["Mjob", "F value"], 2)`, p < 0.05). Children of health professionals (mean G3=12.15) and teachers perform significantly better than those whose mothers work at home (mean G3=9.15). This reflects potential socio-economic advantages.
 
-- **Health professionals**: Mean G3 = 12.15 (highest)
-- **Teachers**: Mean G3 = 11.05
-- **Services**: Mean G3 = 11.02
-- **Other**: Mean G3 = 9.82
-- **At home**: Mean G3 = 9.15 (lowest)
+**Alcohol Consumption:** Surprisingly, weekend alcohol consumption (`Walc`) showed **no significant difference** in grades (F = `r round(aov_walc["as.factor(Walc)", "F value"], 2)`, p > 0.05). While heavy drinkers show a slight dip, the variance is not statistically distinct, suggesting that moderate social habits may not be the primary driver of failure when isolated.
 
-The analysis suggests that having a mother in the health or education sector is associated with higher student performance. This could reflect:
+**Travel Time:** There is a marginally significant effect of travel time (p $\approx$ 0.14), with a clear downward trend. Students with <15 min travel time average 10.8, while those with >3 hours average 8.75. Long commutes likely reduce available study time and increase fatigue.
 
-1. Higher educational attainment of such parents, leading to better support at home
-2. Greater awareness of the importance of education
-3. Potentially better socio-economic conditions
+## Logistic Regression
 
-In contrast, mothers who work "at home" or in "other" professions show children with lower grades, though this may also correlate with socio-economic factors not directly captured.
+Logistic Regression is the standard statistical method for binary classification problems.
+It models the probability $\vartheta(X)=P(Y=1|X)$ that an event occurs as a function of independent variables $X$. Instead of fitting a straight line, it uses the logistic function to map the output between 0 and 1.
 
-### Hypothesis B (Behavioral)
+The logistic function is defined as:
+$$\vartheta(X) = \frac{e^{\beta_0 + \beta_1 X_1 + \dots + \beta_k X_k}}{1 + e^{\beta_0 + \beta_1 X_1 + \dots + \beta_k X_k}}$$
+and the regression is expressed in terms of log-odds: $$\log\left(\frac{\vartheta(X)}{1-\vartheta(X)}\right) = \beta_0 + \beta_1 X_1 + \dots + \beta_k X_k$$
+Where $\beta_i$ are the coefficients of the model.
 
-Does weekend alcohol consumption negatively impact grades?
+A positive coefficient ($\beta_i > 0$) implies that as $X_i$ increases, the odds/probability of success increase. Conversely, a negative coefficient suggests a decrease in the probability of success.
 
-```{r, echo=FALSE, include=FALSE}
-summary(aov(G3 ~ as.factor(Walc), data = data))
+### Educational Support Analysis
+
+We aimed to predict potential for promotion (`G3` $\ge$ 10). Initial predictors selected were `schoolsup`, `paid`, and `higher`. A preliminary check confirmed low multicollinearity between these binary variables (max correlation $r \approx 0.18$), allowing safe inclusion in the model.
+
+### Model Comparison
+
+We developed three models to predict student promotion:
+
+1.  **Initial Model:** Academic support variables only (`schoolsup`, `paid`, `higher`).
+2.  **Improved Model:** Added `failures` and `goout` to capture background logic.
+3.  **Stepwise Model:** Automated selection on all variables to validate the manual choice.
+
+```{r include=FALSE}
+data$Promoted <- ifelse(data$G3 >= 10, 1, 0)
+logit_model <- glm(Promoted ~ schoolsup + paid + higher, data = data, family = binomial)
+logit_improved <- glm(Promoted ~ schoolsup + paid + higher + failures + goout, data = data, family = binomial)
+
+logit_full <- glm(Promoted ~ schoolsup + paid + higher + failures + goout + 
+                            absences + studytime + activities + nursery + internet + 
+                            address + Pstatus + famrel + freetime + health + sex + Dalc + Walc, 
+                            data = data, family = binomial)
+logit_stepwise <- step(logit_full, direction = "both", trace = 0)
 ```
 
-Interestingly, the results show **no significant difference** in grades across weekend alcohol consumption levels (F = 0.73, p > 0.05). The mean grades are relatively consistent:
+The **Initial Model** showed `higher` as a positive predictor, but the **Improved Model** significantly lowered the AIC (from `r round(logit_model$aic,0)` to `r round(logit_improved$aic, 0)`), highlighting the critical negative impact of past `failures`. The **Stepwise** algorithm converged to the same set of predictors as our Improved Model (plus `sex`), confirming the robustness of our manual selection.
 
-- Level 1 (very low): Mean G3 = 10.74
-- Level 2 (low): Mean G3 = 10.08
-- Level 3 (medium): Mean G3 = 10.73
-- Level 4 (high): Mean G3 = 9.69
-- Level 5 (very high): Mean G3 = 10.14
+### Excluding Zero-Grades
 
-While there is a slight downward trend at level 4, the overall variation is not statistically significant. This suggests that weekend alcohol consumption alone, without considering frequency or context, may not be a primary driver of academic performance differences in this dataset. However, it's worth noting that social context and peer dynamics (which may be correlated with alcohol use) could have confounding effects.
+We observed 38 "dropout" entries (`G3`=0). We re-tested the Improved Model on filtered data to ensure results weren't driven solely by these outliers.
 
-### Hypothesis C (Travel/Logistical)
-
-Does travel time from home to school affect academic performance?
-
-```{r, echo=FALSE, include=FALSE}
-summary(aov(G3 ~ traveltime, data = data))
+```{r include=FALSE}
+data_filtered <- subset(data, G3 != 0)
+data_filtered$Promoted <- ifelse(data_filtered$G3 >= 10, 1, 0)
+logit_filtered <- glm(Promoted ~ schoolsup + failures + goout + paid + higher, 
+                      data = data_filtered, family = binomial)
 ```
 
-The results show a marginally significant effect of travel time (F = 1.84, p $\approx$ 0.14), with a clear downward trend:
+### ROC Evaluation
 
-- **1 hour or less**: Mean G3 = 10.78 (n=257)
-- **1-2 hours**: Mean G3 = 9.91 (n=107)
-- **2-3 hours**: Mean G3 = 9.26 (n=23)
-- **>3 hours**: Mean G3 = 8.75 (n=8)
+We compared the discriminative ability of the models.
 
-The data suggests a practical relationship: longer commutes are associated with lower grades. This could be due to fatigue, reduced study time after accounting for commute, or the stress of long travel. The effect becomes increasingly pronounced at the extremes (>3 hours), though the sample size is very small in this group.
+```{r include=FALSE}
+library(pROC)
+
+prob_model <- predict(logit_model, type = "response")
+prob_improved <- predict(logit_improved, type = "response")
+prob_stepwise <- predict(logit_stepwise, type = "response")
+prob_filtered <- predict(logit_filtered, type = "response")
+
+roc_model <- roc(data$Promoted, prob_model)
+roc_improved <- roc(data$Promoted, prob_improved)
+roc_stepwise <- roc(data$Promoted, prob_stepwise)
+roc_filtered <- roc(data_filtered$Promoted, prob_filtered)
+```
+```{r message=FALSE, echo=FALSE, fig.height=4, fig.width=6, fig.align='center'}
+# Plot ROC curves tightly
+par(mar=c(4,4,1,1))
+plot(roc_model, col="red", main="ROC Analysis", lwd=2, legacy.axes=TRUE)
+plot(roc_improved, col="blue", add=TRUE, lwd=2)
+plot(roc_stepwise, col="green", add=TRUE, lwd=2)
+plot(roc_filtered, col="magenta", add=TRUE, lwd=2)
+legend("bottomright", 
+       legend=c(paste("Initial (AUC=", round(auc(roc_model), 2), ")"), 
+       paste("Improved (AUC=", round(auc(roc_improved), 2), ")"),
+       paste("Stepwise (AUC=", round(auc(roc_stepwise), 2), ")"),
+       paste("Filtered (AUC=", round(auc(roc_filtered), 2), ")")),
+       col=c("red", "blue", "green", "magenta"), lwd=2, cex=0.8)
+```
+
+The Improved Model (Blue) clearly outperforms the Initial Model. Importantly, the Filtered Model (Magenta) maintains high accuracy (AUC $\approx$ `r round(auc(roc_filtered), 2)`), proving the model effectively distinguishes passing students from failing ones, not just dropouts.
 
 ## Linear Regression (Numerical Prediction)
 
@@ -390,203 +346,104 @@ Where:
 
 We aim to predict the final grade (**G3**) based on different sets of predictors.
 
-### Pre-analysis: Correlation Check
+### Numeric Prediction Models
 
-Before building the models, it is crucial to examine the relationships between all candidate numeric variables to check for multicollinearity, which could distort valid statistical inferences. We examine the correlation between potential predictors including age, parental education, behavioral factors, and health.
+We built Linear Regression models to predict the final grade `G3`. A preliminary correlation check highlighted strong collinearity between parental education levels (`Medu`, `Fedu`, $r \approx 0.62$) and alcohol consumption types (`Dalc`, `Walc`, $r \approx 0.65$), guiding our variable selection.
 
-```{r, echo=FALSE}
-library(corrplot)
-numeric_columns <- c("age", "Medu", "Fedu", "traveltime", "studytime", "failures", 
-                     "famrel", "freetime", "goout", "Dalc", "Walc", "health", "absences")
-numeric_vars <- data[, numeric_columns]
-cor_matrix <- cor(numeric_vars, use = "complete.obs")
-corrplot(cor_matrix, method = "color", type = "upper", tl.cex = 0.7, addCoef.col = "black", number.cex = 0.6)
-```
+We tested two hypothesis-based models and one automated model:
 
-The correlation matrix reveals two notable clusters of collinearity:
-
-1.  **Parental Education**: `Medu` and `Fedu` have a strong positive correlation ($r \approx 0.62$). Since they carry similar information (socioeconomic status), including both might inflate standard errors. We will primarily use `Medu` as it often has a slightly stronger predictive power in educational contexts.
-2.  **Alcohol Consumption**: `Dalc` (workday) and `Walc` (weekend) are strongly correlated ($r \approx 0.65$). We might consider combining them or selecting one.
-
-Other correlations are generally moderate to weak ($|r| < 0.35$), suggesting that aside from these specific pairs, multicollinearity is manageable. The strongest negative correlation remains between `Medu` and `failures` ($\approx -0.24$).
-
-### Model A: "Academic Effort"
-
-This model focuses on student behavior and academic history. The hypothesis is that effort (`studytime`), attendance (`absences`), and past performance (`failures`) are the main drivers of the final grade.
-
-$$ G3 = \beta_0 + \beta_1 \cdot \text{studytime} + \beta_2 \cdot \text{absences} + \beta_3 \cdot \text{failures} + \epsilon $$
+1.  **Academic Effort Model:** Predictors `studytime`, `absences`, `failures`. ($R^2 \approx 13.5\%$)
+2.  **Background Model:** Predictors `Medu`, `famrel`, `internet`. ($R^2 \approx 5.3\%$)
+3.  **Optimized Model (Stepwise):** Selected via AIC.
 
 ```{r, echo=FALSE, include=FALSE}
+# Model A
 model_a <- lm(G3 ~ studytime + absences + failures, data = data)
-summary(model_a)
-```
-
-**Interpretation:**
-
-*   **Model Fit**: The $R^2$ is **0.135**, meaning this model explains about 13.5% of the variability in the final grade.
-*   **Significance**:
-    *   **Failures ($\beta \approx -2.20$)**: Highly significant ($p < 0.001$). Each past failure reduces the expected final grade by over 2 points.
-    *   **Studytime**: Not significant ($p = 0.41$). Surprisingly, self-reported study time does not directly predict G3 when controlling for failures.
-    *   **Absences**: Not significant.
-
-### Model B: "Background & Environment"
-
-This model tests the "Nature/Nurture" hypothesis: that family background and resources determine success.
-
-$$ G3 = \beta_0 + \beta_1 \cdot \text{Medu} + \beta_2 \cdot \text{famrel} + \beta_3 \cdot \text{internet} + \epsilon $$
-
-```{r, echo=FALSE, include=FALSE}
+# Model B
 model_b <- lm(G3 ~ Medu + famrel + internet, data = data)
-summary(model_b)
-```
-
-**Interpretation:**
-
-*   **Model Fit**: The $R^2$ is only **0.053** (5.3%). This model performs worse than the "Effort" model.
-*   **Significance**:
-    *   **Medu ($\beta \approx 0.86$)**: Significant ($p < 0.001$). Mother's education is a strong proxy for student success.
-    *   **Internet/Famrel**: Neither are statistically significant predictors in this specific combination.
-
-### Step-wise Selection (Optimization)
-
-To find the most parsimonious model (the "Best Fit"), we use a stepwise selection procedure. This algorithm iteratively adds or removes variables to balance model fit against complexity. We start with a **Full Model** containing all potential predictors (excluding the intermediate grades G1 and G2 to focus on socio-demographic drivers).
-
-```{r, echo=FALSE}
-# Full model with all variables except G1 and G2
+# Full Optimization
 full_model <- lm(G3 ~ . - G1 - G2, data = data)
 best_model <- step(full_model, direction = "both", trace = 0)
-
-# Extract coefficients
-coefs_table <- summary(best_model)$coefficients
-
-# Filter to show only significant predictors (p < 0.05) 
-# and remove the Intercept for a cleaner view of drivers
-significant_preds <- coefs_table[coefs_table[, "Pr(>|t|)"] < 0.05 & rownames(coefs_table) != "(Intercept)", ]
-
-# formatting the table
-knitr::kable(significant_preds[, c("Estimate", "Pr(>|t|)")], 
-             digits = 4, 
-             caption = "Significant Predictors Selected by Stepwise Model")
 ```
 
-The stepwise algorithm selects a model that includes **Failures**, **Mother's Job**, **Family Relationship**, **Free time**, **Absences**, and **Mother's Education**.
-This confirms that academic history (**failures**) is the strongest driver, but family background (**mother's job/education**) and behavior (**absences/go out**) also play significant roles.
+The **Optimized Model** included `failures`, `Medu`, `goout`, `absences`, and `famrel` as significant predictors ($p < 0.05$). Academic history (`failures`) remained the strongest driver ($\beta \approx -2.0$), but family influence (`Medu`) was also validated.
 
-### Model Diagnostics: The "Zero" Problem
+### Diagnostics and Refinement
 
-To validate our "Best Fit" model, we perform diagnostic checks on the residuals.
+Diagnostic plots for the Optimized Model revealed non-normality in the residuals, driven largely by the subset of students with `G3=0` (dropouts). To fix this, we refined the model to predict performance only for active students (`G3 > 0`).
 
-#### Normality of Residuals (Q-Q Plot)
-
-The linear regression model assumes that the residuals (errors) are normally distributed.
-
-```{r fig.height=5, fig.width=6, fig.align="center", echo=FALSE}
+```{r fig.align="center", echo=FALSE, message=FALSE, warning=FALSE}
 library(ggplot2)
+library(gridExtra)
 
-# Extract residuals
-residuals_df <- data.frame(residuals = residuals(best_model))
+# --- Full Model Diagnostics (Best Model) ---
+residuals_df <- data.frame(residuals = rstandard(best_model))
 
-# Create Q-Q Plot with ggplot2
-ggplot(residuals_df, aes(sample = residuals)) +
+p1 <- ggplot(residuals_df, aes(sample = residuals)) +
   geom_qq(color = "steelblue", alpha = 0.6) +
   geom_qq_line(color = "red", linetype = "dashed", linewidth = 1) +
-  labs(title = "Normal Q-Q Plot (Full Data)",
-       subtitle = "Notice the deviation in the lower tail",
-       x = "Theoretical Quantiles",
-       y = "Sample Quantiles") +
+  labs(title = "Normal Q-Q (Full Data)",
+       subtitle = "Significant deviation (Left Tail)",
+       x = "Theoretical Quantiles", y = "Standardized Residuals") +
   theme_minimal()
-```
 
-**Interpretation:**
-Most points follow the line, but there is a **significant deviation in the lower tail**. This indicates that the residuals are not perfectly normal. This is primarily due to the presence of students with a grade of **0**. A grade of 0 in this dataset is often a symbolic value indicating data about an **administrative failure** (dropout or missed exam), rather than an **academic failure** (insufficient grade between 1 and 9).
 
-Our model consistently **overestimates** these grades (predicting e.g., a 8 or 9 when the actual is 0), leading to large negative residuals.
-
-#### Actual vs Predicted
-
-```{r fig.height=5, fig.width=6, fig.align="center", echo=FALSE}
-# Create a dataframe with predictions
 predictions <- predict(best_model)
 results <- data.frame(Actual = data$G3, Predicted = predictions)
 
-# Plot Actual vs Predicted with Jitter to show overlapping points
-ggplot(results, aes(x = Actual, y = Predicted)) +
+p2 <- ggplot(results, aes(x = Actual, y = Predicted)) +
   geom_jitter(color = "steelblue", alpha = 0.6, width = 0.2, height = 0.2) +
   geom_abline(intercept = 0, slope = 1, color = "darkred", linetype = "dashed", linewidth = 1) +
-  labs(title = "Actual vs Predicted Grades (Full Data)",
-       subtitle = "Model struggles with the 0-grade cluster",
-       x = "Actual Grade",
-       y = "Predicted Grade") +
+  labs(title = "Actual vs Predicted (Full Data)",
+       subtitle = "Model struggles with 0-grade cluster",
+       x = "Actual Grade", y = "Predicted Grade") +
   coord_fixed(ratio = 1, xlim = c(0, 20), ylim = c(0, 20)) +
   theme_minimal()
-```
 
-The plot clearly shows the cluster of points at $Actual=0$ where predictions are much higher. This confirms that "administrative failure" (0) is a distinct event from "academic failure" (low grade), and treating them as a continuous scale introduces noise.
-
-### Refining the Model: Assessing Non-Zero Grades
-
-Since we identified that 0 grades are structural anomalies (dropouts), we refine our Linear Regression model to focus only on active students who received a grade ($G3 > 0$). We retrain the same model structure on this subset to assess its real predictive power for academic performance.
-
-```{r, echo=FALSE}
-# Filter for non-zero grades
+# --- Refined Model (G3 > 0) ---
 data_nonzero <- subset(data, G3 > 0)
-
-# Retrain the "best_model" structure on the filtered data
 refined_model <- update(best_model, data = data_nonzero)
-# summary(refined_model)
 
-# Extract coefficients
-coefs_table <- summary(refined_model)$coefficients
-# Filter to show only significant predictors (p < 0.05) 
-# and remove the Intercept for a cleaner view of drivers
-significant_preds <- coefs_table[coefs_table[, "Pr(>|t|)"] < 0.05 & rownames(coefs_table) != "(Intercept)", ]
+residuals_refined <- data.frame(residuals = rstandard(refined_model))
 
-# formatting the table
-knitr::kable(significant_preds[, c("Estimate", "Pr(>|t|)")], 
-             digits = 4, 
-             caption = "Significant Predictors Selected by Stepwise Model")
-```
-
-**Diagnostics of Refined Model:**
-
-```{r fig.height=5, fig.width=6, fig.align="center", echo=FALSE}
-residuals_refined <- data.frame(residuals = residuals(refined_model))
-
-ggplot(residuals_refined, aes(sample = residuals)) +
+p3 <- ggplot(residuals_refined, aes(sample = residuals)) +
   geom_qq(color = "forestgreen", alpha = 0.6) +
   geom_qq_line(color = "red", linetype = "dashed", linewidth = 1) +
-  labs(title = "Normal Q-Q Plot (G3 > 0 Only)",
-       subtitle = "Normality assumption is much better satisfied",
-       x = "Theoretical Quantiles",
-       y = "Sample Quantiles") +
+  labs(title = "Normal Q-Q Plot (Refined)",
+       subtitle = "Normality assumption more satisfied",
+       x = "Theoretical Quantiles", y = "Standardized Residuals") +
   theme_minimal()
-```
 
-We also visualize the prediction accuracy for this refined subset:
-
-```{r fig.height=5, fig.width=6, fig.align="center", echo=FALSE}
-# Predictions for the refined model
 pred_refined <- predict(refined_model)
 results_refined <- data.frame(Actual = data_nonzero$G3, Predicted = pred_refined)
 
-ggplot(results_refined, aes(x = Actual, y = Predicted)) +
+p4 <- ggplot(results_refined, aes(x = Actual, y = Predicted)) +
   geom_jitter(color = "forestgreen", alpha = 0.6, width = 0.2, height = 0.2) +
   geom_abline(intercept = 0, slope = 1, color = "darkred", linetype = "dashed", linewidth = 1) +
-  labs(title = "Actual vs Predicted Grades (Refined Model)",
-       subtitle = "Prediction pattern is closer to the ideal line",
-       x = "Actual Grade (G3 > 0)",
-       y = "Predicted Grade") +
+  labs(title = "Actual vs Predicted (Refined)",
+       subtitle = "Prediction closer to ideal line",
+       x = "Actual Grade (G3 > 0)", y = "Predicted Grade") +
   coord_fixed(ratio = 1, xlim = c(0, 20), ylim = c(0, 20)) +
   theme_minimal()
+
+grid.arrange(p1, p3, p2, p4, ncol = 2)
 ```
 
-We observe the following improvements:
+By removing the noise from dropouts, the refined model shows substantial improvements:
 
-1.  **Model Validity**: The refined model's $R^2$ increased to **0.275** (from ~0.15), and the Q-Q plot now confirms that the normality assumption is largely satisfied for active students. This suggests our linear model is quite effective at predicting performance *given* that a student participates in the exam.
+1.  **Validity**: The refined model's $R^2$ increased to **0.275** (from ~0.15), and the Q-Q plot (top right) confirms normality is satisfied.
+2.  **The "Absences" Flip**: In the refined model, the coefficient for absences flips to **negative ($\approx -0.055$)**, proving that for active students, missing class hurts performance.
+3.  **Selection Bias in School Support**: The negative effect of school support suggests it acts as a proxy for at-risk students.
 
-2.  **The "Absences" Flip**: In the full model (including zeros), absences appeared to have a positive or negligible coefficient. In the refined model, the coefficient flips to **negative ($\approx -0.055$)**. This proves the 0-grade noise was masking the true negative impact of missing class: once we remove dropouts, we see that for active students, more absences lead to lower grades.
+```{r, echo=FALSE}
+# Extract coefficients for table display
+coefs_table <- summary(refined_model)$coefficients
+significant_preds <- coefs_table[coefs_table[, "Pr(>|t|)"] < 0.05 & rownames(coefs_table) != "(Intercept)", ]
 
-3.  **Selection Bias in School Support**: The strong negative coefficient for school support ($\beta \approx -2.09$, $p < 0.001$) suggests that this variable acts as a **proxy for struggling students**. It is not that support *causes* lower grades, but rather that support is given primarily to students already at risk of lower performance.
+knitr::kable(significant_preds[, c("Estimate", "Pr(>|t|)")], 
+             digits = 4, 
+             caption = "Significant Predictors (Refined Model)")
+```
 
 # Conclusions and Discussion
 
@@ -603,6 +460,7 @@ This result should be interpreted with caution. It is a classic example of **sel
 
 ## The Social Trade-off: Romance vs. Alcohol
 The analysis of social behaviors offered a nuanced perspective on student life.
+
 *   **Romantic Relationships**: We observed a significant penalty for students in relationships (>1 grade point drop). This supports the "resource allocation" theory, where the time and emotional energy demanded by relationships compete directly with academic focus.
 *   **Alcohol Consumption**: contrary to the "moral panic" often associated with youth alcohol use, weekend consumption (`Walc`) did not show a statistically significant independent negative effect on grades in our ANOVA or regression models. This implies that moderate social engagement does not inherently harm performance, whereas the sustained daily time commitment of a relationship does.
 
