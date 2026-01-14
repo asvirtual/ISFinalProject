@@ -16,31 +16,260 @@ editor_options:
   markdown: 
     wrap: 80
   chunk_output_type: console
+bibliography: references.bib
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-\newpage
+\newpage  
 
 # Abstract
 
+This report analyzes the determinants of academic performance using the UCI "Student Performance Data Set",  [@cortez2008student] derived from Mathematics classes in two Portuguese schools (Gabriel Pereira and Mousinho da Silveira) and collected through school reports and questionnaires. The study aims to identify the demographic, social, and behavioral factors driving final grades (G3), using empirical evidence to validate or refuse common assumptions about student performance. Employing Chi-Squared tests, along with parametric tests and regression analysis, we investigate variables ranging from family background to social habits.
 
+\newpage
 
 # Introduction
 
+Education is a cornerstone of personal and economic development; however, high failure rates in core subjects such as Mathematics remain a significant challenge, particularly within the Portuguese secondary school system. Academic performance is rarely the result of a single variable. Instead, it emerges from a complex interplay of demographic attributes, family background, and individual social behaviors outside the classroom.
+
+While previous studies on this dataset have primarily focused on minimizing predictive error using complex data mining algorithms, this report adopts a classical statistical framework. The primary objective is explanatory and inferential: to empirically isolate and quantify the factors that drive student success or failure.
+
+The dataset, sourced from the UCI "Student Performance Data Set" [@cortez2008student], combines administrative records with questionnaire responses from secondary schools in Portugal, Gabriel Pereira and Mousinho da Silveira, collected during the 2005–2006 academic year. In particular, this report focuses on Mathematics subject.
+
+To contextualize the dataset's timeframe, the latest PISA 2022 National Report by IAVE [@iave2023pisa], indicates thta student performance in Portugal has increased in the first decades of the 2000s. However, in recent years a downward trend has been observerd, although performance remains aligned with the OECD average.
+
+![Evolution of average mathematics scores between 2000 and 2022: IAVE, based on OECD (2023)](./data/IAVE2023.png)
+
+We investigate whether common assumptions about student life hold statistical weight. The idea behind this analysis is to provide the statistical basis for answering the following questions:
+\begin{itemize}
+  \item How do social habits (e.g., alcohol consumption, romantic relationships) interact with academic results?
+  \item Do family background factors (e.g., parents' education) significantly stratify student performance?
+  \item Can we quantify the impact of effort (study time) versus external support (paid classes) on the final Mathematics grade (G3)?
+\end{itemize}
+
+To address these questions, this study employs a structured statistical approach ranging from Chi-Squared tests for independence and ANOVA for group comparisons, to Linear and Logistic Regression models for identifying significant predictors of the final grade.
+
+\newpage
 
 # Data description and exploration
 
 ```{r include=FALSE}
-data <- read.csv("./data/student-mat.csv", sep=";")
+# stringsAsFactors = TRUE permitts to interpret strings as factors
+# i.e. "yes" and "no" as factors and not as a string of characters
+data <- read.csv("./data/student-mat.csv", sep=";", stringsAsFactors = TRUE)
 str(data)
 summary(data)
 head(data)
 ```
 
-# Statistical Analysis
+The dataset was created based on school report cards relating to grades and number of absences, as well as questionnaires (with closed-ended questions), in order to supplement the previous information.
+In total, there are 395 observations for the mathematics dataset and 33 variables with no missing values. We have both categorical and discrete variables. 
+
+\begin{longtable}{p{2.5cm} p{11cm}}
+\textbf{Attribute} & \textbf{Description (Domain)} \\
+\hline
+\textbf{school}     & school (binary: Gabriel Pereira [GP] or Mousinho da Silveira [MS]) \\
+\textbf{sex}        & sex (binary: female [F] or male [M]) \\
+\textbf{age}        & age (numeric: from 15 to 22) \\
+\textbf{address}    & home address type (binary: urban [U] or rural [R]) \\
+\textbf{famsize}    & family size (binary: $\le$ 3 or $>$ 3) \\
+\textbf{Pstatus}    & parent's cohabitation status (binary: living together [T] or apart [A]) \\
+\textbf{Medu}       & mother's education level (numeric: none [0] to higher [4]) \\
+\textbf{Fedu}       & father's education level (numeric: none [0] to higher [4]) \\
+\textbf{Mjob}       & mother's job (nominal: among 5 possible choices) \\
+\textbf{Fjob}       & father's job (nominal: among 5 possible choices) \\
+\textbf{reason}     & reason to choose this school (nominal) \\
+\textbf{guardian}   & guardian (nominal: mother, father or other) \\
+\textbf{traveltime} & home to school travel time (numeric: 1 to 4) \\
+\textbf{studytime}  & weekly study time (numeric: 1 to 4) \\
+\textbf{failures}   & number of past class failures (numeric: $n$ if $1 \le n < 3$, else 4) \\
+\textbf{schoolsup}  & extra educational school support (binary: yes [Y] or no [N]) \\
+\textbf{famsup}     & family educational support (binary: yes [Y] or no [N]) \\
+\textbf{paid}       & extra paid classes (binary: yes [Y] or no [N]) \\
+\textbf{activities} & extra-curricular activities (binary: yes [Y] or no [N]) \\
+\textbf{nursery}    & attended nursery school (binary: yes [Y] or no [N]) \\
+\textbf{internet}   & Internet access at home (binary: yes [Y] or no [N]) \\
+\textbf{higher}     & wants to take higher education (binary: yes [Y] or no [N]) \\
+\textbf{romantic}   & with a romantic relationship (binary: yes [Y] or no [N]) \\
+\textbf{famrel}     & quality of family relationships (numeric: very bad [1] to excellent [5]) \\
+\textbf{freetime}   & free time after school (numeric: very low [1] to very high [5]) \\
+\textbf{goout}      & going out with friends (numeric: very low [1] to very high [5]) \\
+\textbf{Dalc}       & workday alcohol consumption (numeric: very low [1] to very high [5]) \\
+\textbf{Walc}       & weekend alcohol consumption (numeric: very low [1] to very high [5]) \\
+\textbf{health}     & current health status (numeric: very bad [1] to very good [5]) \\
+\textbf{absences}   & number of school absences (numeric: from 0 to 93) \\
+\textbf{G1}         & first period grade (numeric: from 0 to 20) \\
+\textbf{G2}         & second period grade (numeric: from 0 to 20) \\
+\textbf{G3}         & final grade (numeric: from 0 to 20) \\
+\end{longtable}
+
+We use a comprehensive approach, displaying histograms for numerical data and bar plots for categorical data. The labels above the bars indicate the relative proportion of each category.
+
+```{r echo=FALSE, fig.height=40, fig.width=25, echo=FALSE, message=FALSE, warning = FALSE}
+library(ggplot2)
+library(dplyr)
+library(gridExtra)
+
+plot_list <- list()
+
+for (col_name in names(data)[1:(ncol(data)-3)]) {
+  values <- data[[col_name]]
+  if (is.numeric(values)) {
+    p <- ggplot(data, aes(x = .data[[col_name]])) +
+      geom_histogram(fill = "gray", color = "black", bins = 20) +
+      theme_minimal(base_size = 24) +
+      labs(title = col_name, y = "Freq", x = "")
+  } else {
+    p <- ggplot(data, aes(x = .data[[col_name]])) +
+      geom_bar(aes(y = (after_stat(count))/sum(after_stat(count))), fill = "gray", color = "black") +
+      geom_text(aes(y = (after_stat(count))/sum(after_stat(count)), 
+                    label = round((after_stat(count))/sum(after_stat(count)), 2)), 
+                stat = "count", vjust = -0.5) +
+      theme_minimal(base_size = 24) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      labs(title = col_name, y = "Proportion", x = "")
+  }
+  plot_list[[col_name]] <- p
+}
+grid.arrange(grobs = plot_list, ncol = 4)
+```
+
+For the target variables (G1, G2, G3), we use box plots. This allows us to directly compare the distribution of votes over time. The graph below shows the median, the interquartile range and outliers (if are present).
+
+```{r echo=FALSE, fig.height=5, fig.width=10}
+library(tidyr)
+cols_indices <- (ncol(data)-2):ncol(data)
+cols_names <- names(data)[cols_indices]
+
+data_long <- data %>%
+  select(all_of(cols_names)) %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
+
+ggplot(data_long, aes(x = Variable, y = Value)) +
+  geom_boxplot(fill = "gray", color = "black") +
+  theme_minimal(base_size = 24) +
+  labs(y = "Grade", x = "")
+```
+
+# Statistical analysis
+
+## Test of Independence
+
+To analyze the relationship between categorical variables, we employ a two-step statistical approach based on the Chi-square ($\chi^2$) Test and Fisher's Exact Test.
+
+The _Chi-square_ ($\chi^2$) test is used to assess whether a statistically significant association (dependency) exists between two categorical variables within a population by comparing the observed sample frequencies ($Observed$) against expected frequencies ($Expected$) calculated under the assumption of independence ($P(A) = P(A \mid B)$). 
+The test assumes random sampling and that all expected values in every cell of the contingency table are at least 5 [@chisquare].
+
+Our hypotheses are:
+\begin{itemize}
+  \item $H_0$: The variables are independent (no relationship)
+  \item $H_1$: The variables are dependent (there is a relationship)
+\end{itemize}
+
+The $\chi^2$ statistics measure the divergence between observed data and the null hypothesis, and is computed as: $$\chi^2=\sum \frac{(Observed-Expected)^2}{Expected}$$
+
+where the expected frequency for each cell is given by $$Expected = \frac{row\;total \; \times \; column\;total}{n}$$ and the degrees of freedom are calculated as: $$df=(number\;of\;rows-1)(number\;of\;columns-1)$$
+
+When the Chi-square assumption is violated (expected frequencies $< 5$), the approximation becomes unreliable. In such cases, we prefer Fischer's Exact Test. This test calculates the exact probability of the data and directly provides the Odds Ratio, allowing us to quantify the strength and direction of the association.
+
+For both tests, the decision is based on the p-value relative to the significance level ($\alpha=0.05$):
+\begin{itemize}
+  \item if \(p \leq \alpha\) reject the null hypothesis.
+  \item if \(p > \alpha\) cannot reject the null hypothesis.
+\end{itemize}
+
+### Parents Influence on Studies
+
+The objective of this analysis is to investigate whether parental education levels significantly influence a student's intention to pursue higher education (`higher`). 
+
+To address potential issues with low expected frequencies in specific categories and to obtain a clear measure of effect size (Odds Ratio), we also performed a Fisher's Exact Test on grouped data:
+\begin{itemize}
+  \item Low Education: Levels 0 (None), 1 (Primary 4th), and 2 (Primary 5th-9th).
+  \item High Education: Levels 3 (Secondary) and 4 (Higher).
+\end{itemize}
+
+#### Mother education level
+
+```{r include=FALSE}
+# 1. Chi-Square on full data
+table_mother <- table(data$Medu, data$higher)
+test_mother <- chisq.test(table_mother)
+# print(round(test_mother$expected, 2))
+
+# 2. Fisher on grouped data
+data$Medu_Level <- ifelse(data$Medu <= 2, "Low", "High")
+data$Medu_Level <- factor(data$Medu_Level, levels = c("Low", "High"))
+
+table_fisher_m <- table(data$Medu_Level, data$higher)
+test_fisher_m <- fisher.test(table_fisher_m)
+```
+
+The Chi-squared value is `r round(test_mother$statistic, 2)` with `r round(test_mother$parameter,3)` degrees of freedom. The p-value (`r round(test_mother$p.value,3)`) is well below the significance level ($\alpha = 0.05$), leading to the *rejection* of the null hypothesis.
+
+However, the reliability of the Chi-square approximation is limited by the presence of expected cell frequencies below 5 (the minimum value is `r round(min(test_mother$expected), 2)`) To address this issue and ensure robust inference, we aggregated the education levels into a binary format (Low vs. High) and performed Fisher's Exact Test. 
+
+Fisher's exact test shows a significant relationship ($p=$ `r round(test_fisher_m$p.value, 3)`). The estimated Odds Ratio suggests that students with highly educated fathers have odds of continuing their studies that are `r round(test_fisher_m$estimate, 1)` times greater than those with mothers having lower education levels.
+
+#### Father education level
+
+```{r include=FALSE}
+# 1. Chi-Square on full data
+table_father <- table(data$Fedu, data$higher)
+test_father <- chisq.test(table_father)
+# print(round(test_father$expected, 2))
+
+# 2. Fisher on grouped data
+data$Fedu_Level <- ifelse(data$Fedu <= 2, "Low", "High")
+data$Fedu_Level <- factor(data$Fedu_Level, levels = c("Low", "High"))
+
+table_fisher_f <- table(data$Fedu_Level, data$higher)
+test_fisher_f <- fisher.test(table_fisher_f)
+```
+
+The Chi-squared value is `r round(test_father$statistic, 2)` with `r round(test_father$parameter,3)` degrees of freedom. The p-value (`r round(test_father$p.value, 3)`) is well below the significance level ($\alpha = 0.05$), leading to the *rejection* of the null hypothesis.
+
+However, the reliability of the Chi-square approximation is limited by the presence of expected cell frequencies below 5 (the minimum value is `r round(min(test_father$expected), 2)`). To address this issue and ensure robust inference, we aggregated the education levels into a binary format (Low vs. High) and performed Fisher's Exact Test.
+
+Fisher's exact test shows a significant relationship ($p=$ `r round(test_fisher_f$p.value, 3)`). The estimated Odds Ratio suggests that students with highly educated fathers have odds of continuing their studies that are `r round(test_fisher_f$estimate, 1)` times greater than those with fathers having lower education levels.
+
+### Influence of Residence (Rural vs. Urban)
+
+We investigated whether living in an urban (`U`) or rural (`R`) area affects the student's intention to pursue higher education (`higher`).
+
+```{r include=FALSE}
+# Create contingency table
+table_address <- table(data$address, data$higher)
+
+# Chi-Square Test
+test_address <- chisq.test(table_address)
+print(test_address)
+
+# Fisher's Exact Test
+test_fisher_a <- fisher.test(table_address)
+```
+
+The reliability of the Chi-square approximation is limited by the presence of expected cell frequencies below 5 (the minimum value is `r round(min(test_address$expected), 2)`). 
+Fisher's exact test shows that the living area does *not affect* the student's intention to pursue higher education ($p=$ `r round(test_fisher_a$p.value, 3)`). 
+
+### Influence of Family Educational Support on Romantic status
+
+We investigated whether Family Educational Support affects the romantic status.
+
+```{r include=FALSE}
+# Create contingency table
+table_famsup_romantic <- table(data$famsup, data$romantic)
+
+# Chi-Square Test
+test_famsup_romantic <- chisq.test(table_famsup_romantic)
+test_famsup_romantic
+```
+
+The analysis shows *no statistically significant* relationship between family support and romantic relationships. The Chi-square p-value is `r round(test_famsup_romantic$p.value,3)`, indicating that the two variables are independent. So, there is no evidence to suggest that students who receive family educational support are more or less likely to be in a romantic relationship compared to those who do not.
+
+Unlike the previous cases, here all expected cell frequencies are well above 5 (the minimum expected value is `r round(min(test_famsup_romantic$expected), 2)`. Therefore, the standard Chi-square test is fully reliable and its assumptions are satisfied.
 
 ## T-Test (Group Comparison)
 
@@ -187,7 +416,7 @@ This model focuses on student behavior and academic history. The hypothesis is t
 
 $$ G3 = \beta_0 + \beta_1 \cdot \text{studytime} + \beta_2 \cdot \text{absences} + \beta_3 \cdot \text{failures} + \epsilon $$
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, include=FALSE}
 model_a <- lm(G3 ~ studytime + absences + failures, data = data)
 summary(model_a)
 ```
@@ -206,7 +435,7 @@ This model tests the "Nature/Nurture" hypothesis: that family background and res
 
 $$ G3 = \beta_0 + \beta_1 \cdot \text{Medu} + \beta_2 \cdot \text{famrel} + \beta_3 \cdot \text{internet} + \epsilon $$
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, include=FALSE}
 model_b <- lm(G3 ~ Medu + famrel + internet, data = data)
 summary(model_b)
 ```
@@ -359,5 +588,28 @@ We observe the following improvements:
 
 3.  **Selection Bias in School Support**: The strong negative coefficient for school support ($\beta \approx -2.09$, $p < 0.001$) suggests that this variable acts as a **proxy for struggling students**. It is not that support *causes* lower grades, but rather that support is given primarily to students already at risk of lower performance.
 
-**Final Summary**:
-Linear Regression works well for **scoring** (predicting the exact grade of a regularly attending student), driven by *Academic History (Failures)*, *Family Background (Medu)*, and *Behavior (Absences)*. However, the event of **administrative failure (Grade 0)** is a structural break that cannot be modeled continuously.
+# Conclusions and Discussion
+
+This study aimed to deconstruct the factors influencing academic performance in Mathematics using a rigorous statistical framework. By moving from exploratory independence tests to refined linear regression models, we have uncovered several key insights that challenge common assumptions and highlight the structural nature of student success.
+
+## The Inertia of Academic History vs. Current Effort
+One of the most striking findings is the dominance of **past failures** over **current study time**.  
+While the "Effort" model hypothesized that weekly study hours would be a primary driver of grades, our regression analysis showed that `studytime` was not statistically significant when controlling for past performance. In contrast, every past failure reduced the expected final grade by over 2 points.
+This suggests a strong **"inertia"** in academic performance: gaps in knowledge accumulated in previous years create a deficit that is difficult to bridge solely through short-term increases in weekly study intensity. Success is cumulative, and early intervention to prevent the *first* failure is likely more effective than remedial study hours later on.
+
+## The "Paradox" of Educational Support
+Our refined model revealed a strong negative correlation between **School Educational Support** (`schoolsup`) and final grades ($\beta \approx -2.09$). 
+This result should be interpreted with caution. It is a classic example of **selection bias** rather than causality. The educational support is not *causing* poor performance; rather, it is effectively targeting those students who are already struggling. Statistically, `schoolsup` acts as a proxy for "risk status," identifying students with foundational gaps that even the support measures cannot fully close within the observed timeframe.
+
+## The Social Trade-off: Romance vs. Alcohol
+The analysis of social behaviors offered a nuanced perspective on student life.
+*   **Romantic Relationships**: We observed a significant penalty for students in relationships (>1 grade point drop). This supports the "resource allocation" theory, where the time and emotional energy demanded by relationships compete directly with academic focus.
+*   **Alcohol Consumption**: contrary to the "moral panic" often associated with youth alcohol use, weekend consumption (`Walc`) did not show a statistically significant independent negative effect on grades in our ANOVA or regression models. This implies that moderate social engagement does not inherently harm performance, whereas the sustained daily time commitment of a relationship does.
+
+## Socio-Economic Stratification
+The "Nature/Nurture" hypothesis was partially confirmed. **Mother's Education** (`Medu`) emerged as a pervasive influence, affecting not just the intention to pursue higher education (as shown in the Chi-Square tests) but also the final mathematics grade (in the stepwise regression). This confirms that the "socio-economic elevator" is still heavily dependent on the "starting floor" provided by the family environment.
+
+## Methodological Takeaway: The "Two-Population" Reality
+Finally, our diagnostic analysis uncovered a critical methodological insight for this dataset: the distinction between **Academic Failure** (low grades) and **Administrative Failure** (grade 0). 
+Including 0-grades in a continuous linear model introduces severe noise, masking the true marginal effects of variables like **absences**. By separating the data, we proved that for active students, absences *do* carry a negative cost. Future predictive modeling on this dataset should treat dropout prediction (Logistic Regression for G3=0) and grade prediction (Linear Regression for G3>0) as two distinct tasks.
+
