@@ -345,9 +345,6 @@ logit_full <- glm(Promoted ~ schoolsup + paid + higher + failures + goout +
                             address + Pstatus + famrel + freetime + health + sex + Dalc + Walc, 
                             data = data, family = binomial)
 logit_stepwise <- step(logit_full, direction = "both", trace = 0)
-
-data["Promoted"] <- NULL  # Clean up
-data_filtered["Promoted"] <- NULL  # Clean up
 ```
 
 The **Initial Model** showed `higher` as a positive predictor, but the **Improved Model** significantly lowered the AIC (from `r round(logit_model$aic,0)` to `r round(logit_improved$aic, 0)`), highlighting the critical negative impact of past `failures`. The **Stepwise** algorithm converged to the same set of predictors as our **Improved Model** (plus `sex`), confirming the robustness of our manual selection.
@@ -420,10 +417,6 @@ We built Linear Regression models to predict the final grade `G3`. A preliminary
 
 We tested two hypothesis-based models and one automated model:
 
-1.  **Academic Effort Model:** Predictors `studytime`, `absences`, `failures`. ($R^2 \approx 13.5\%$)
-2.  **Background Model:** Predictors `Medu`, `famrel`, `internet`. ($R^2 \approx 5.3\%$)
-3.  **Optimized Model (Stepwise):** Selected via AIC.
-
 ```{r, echo=FALSE, include=FALSE}
 # Model A
 model_a <- lm(G3 ~ studytime + absences + failures, data = data)
@@ -433,6 +426,10 @@ model_b <- lm(G3 ~ Medu + famrel + internet, data = data)
 full_model <- lm(G3 ~ . - G1 - G2, data = data)
 best_model <- step(full_model, direction = "both", trace = 0)
 ```
+
+1.  **Academic Effort Model:** Predictors `studytime`, `absences`, `failures`. ($R^2 \approx `r round(summary(model_a)$r.squared * 100, 1)` \%$)
+2.  **Background Model:** Predictors `Medu`, `famrel`, `internet`. ($R^2 \approx `r round(summary(model_b)$r.squared * 100, 1)` \%$)
+3.  **Optimized Model (Stepwise):** Selected via AIC. ($R^2 \approx `r round(summary(best_model)$r.squared * 100, 1)` \%$)
 
 The **Optimized Model** included `failures`, `Medu`, `goout`, `absences`, and `famrel` as significant predictors ($p < 0.05$). Academic history (`failures`) remained the strongest driver ($\beta \approx -2.0$), but family influence (`Medu`) was also validated.
 
@@ -499,9 +496,9 @@ grid.arrange(p1, p3, p2, p4, ncol = 2)
 
 By removing the noise from dropouts, the refined model shows substantial improvements:
 
-1.  **Validity**: The refined model's $R^2$ increased to **0.275** (from ~0.15), and the Q-Q plot (top right) confirms normality is satisfied.
-2.  **The "Absences" Flip**: In the refined model, the coefficient for absences flips to **negative ($\approx -0.055$)**, proving that for active students, missing class hurts performance.
-3.  **Selection Bias in School Support**: The negative effect of school support suggests it acts as a proxy for at-risk students.
+1.  **Validity**: The refined model's $R^2$ increased to **`r round(summary(refined_model)$r.squared * 100, 1)`\%** (from ~`r round(summary(best_model)$r.squared * 100, 1)`\%), and the Q-Q plot (top right) confirms normality is satisfied.
+2.  **The "Absences" Flip**: In the refined model, the coefficient for absences flips to **negative ($\approx `r round(coef(refined_model)["absences"], 3)`$)** (in the original model it was $`r round(coef(best_model)["absences"], 3)`$), proving that for active students, missing class does hurt performance.
+3.  **Selection Bias in School Support**: The negative effect of school support ($\approx `r round(coef(refined_model)["schoolsupyes"], 3)`$) suggests it acts as a proxy for at-risk students.
 
 ```{r, echo=FALSE}
 # Extract coefficients for table display
@@ -519,7 +516,7 @@ This study aimed to deconstruct the factors influencing academic performance in 
 
 ## The Inertia of Academic History vs. Current Effort
 One of the most striking findings is the dominance of **past failures** over **current study time**.  
-While the "Effort" model hypothesized that weekly study hours would be a primary driver of grades, our regression analysis showed that `studytime` was not statistically significant when controlling for past performance. In contrast, every past failure reduced the expected final grade by over 2 points.
+While the "Effort" model hypothesized that weekly study hours would be a primary driver of grades, our regression analysis showed that `studytime` was not statistically significant when controlling for past performance. In contrast, every past failure reduced the expected final grade by approximately 1 point.
 This suggests a strong **"inertia"** in academic performance: gaps in knowledge accumulated in previous years create a deficit that is difficult to bridge solely through short-term increases in weekly study intensity. Success is cumulative, and early intervention to prevent the *first* failure is likely more effective than remedial study hours later on.
 
 ## The "Paradox" of Educational Support
@@ -530,7 +527,7 @@ This result should be interpreted with caution. It is a classic example of **sel
 The analysis of social behaviors offered a nuanced perspective on student life.
 
 \vspace{-5px}
-*   **Romantic Relationships**: We observed a significant penalty for students in relationships (>1 grade point drop). This supports the "resource allocation" theory, where the time and emotional energy demanded by relationships compete directly with academic focus.
+*   **Romantic Relationships**: We observed a significant penalty for students in relationships (>1 mean grade point drop). This supports the "resource allocation" theory, where the time and emotional energy demanded by relationships compete directly with academic focus.
 *   **Alcohol Consumption**: contrary to the "moral panic" often associated with youth alcohol use, weekend consumption (`Walc`) did not show a statistically significant independent negative effect on grades in our ANOVA or regression models. This implies that moderate social engagement does not inherently harm performance, whereas the sustained daily time commitment of a relationship does.
 
 ## Socio-Economic Stratification
