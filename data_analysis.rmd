@@ -44,11 +44,13 @@ To contextualize the dataset's timeframe, the latest PISA 2022 National Report b
 ![Evolution of average mathematics scores between 2000 and 2022: IAVE, based on OECD (2023)](./data/IAVE2023.png)
 
 We investigate whether common assumptions about student life hold statistical weight. The idea behind this analysis is to provide the statistical basis for answering some questions, like the following ones:
+\vspace{-10px}
 \begin{itemize}
   \item How do social habits (e.g., alcohol consumption, romantic relationships) interact with academic results?
   \item Do family background factors (e.g., parents' education) significantly stratify student performance?
   \item Can we quantify the impact of effort (study time) versus external support (paid classes) on the final Mathematics grade (G3)?
 \end{itemize}
+\vspace{-10px}
 
 To address these questions, this study employs a structured statistical approach ranging from tests for independence and ANOVA for group comparisons, to Linear and Logistic Regression models for identifying significant predictors of the final grade.
 
@@ -140,7 +142,7 @@ grid.arrange(grobs = plot_list, ncol = 4)
 
 For the target variables (G1, G2, G3), we use box plots. This allows us to directly compare the distribution of votes over time. The graph below shows the median, the interquartile range and outliers (if are present).
 
-```{r echo=FALSE, fig.height=5, fig.width=10}
+```{r echo=FALSE, fig.height=5, fig.width=10, out.width="65%", fig.align="center"}
 library(tidyr)
 cols_indices <- (ncol(data)-2):ncol(data)
 cols_names <- names(data)[cols_indices]
@@ -165,10 +167,12 @@ The _Chi-square_ ($\chi^2$) test is used to assess whether a statistically signi
 The test assumes random sampling and that all expected values in every cell of the contingency table are at least 5 [@chisquare].
 
 Our hypotheses are:
+\vspace{-10px}
 \begin{itemize}
   \item $H_0$: The variables are independent (no relationship)
   \item $H_1$: The variables are dependent (there is a relationship)
 \end{itemize}
+\vspace{-10px}
 
 The $\chi^2$ statistics measure the divergence between observed data and the null hypothesis, and is computed as: $$\chi^2=\sum \frac{(Observed-Expected)^2}{Expected}$$
 
@@ -203,17 +207,21 @@ Fisher's Exact Test confirms a strong relationship for parents: students with hi
 Correlation analysis quantifies the strength and direction of relationships between numerical variables, serving as the numerical equivalent to categorical tests like Chi-Squared. The choice of metric depends on data distribution: the standard Pearson coefficient ($r$) is used for normally distributed data, while the non-parametric Spearman coefficient ($r_S$) is preferred when the normality assumption is not met.
 
 The value of the coefficient is inside the range $[-1,+1]$:
+\vspace{-10px}
 \begin{itemize}
     \item $r, r_S = 1$: perfect positive correlation
     \item $r, r_S = - 1$: perfect negative correlation
     \item $r, r_S = 0$: no correlation.
 \end{itemize}
+\vspace{-10px}
 
 The test verifies the following hypotheses:
+\vspace{-10px}
 \begin{itemize}
     \item $H_0$: variables are not correlated ($r, r_S = 0$)
     \item $H_1$: there is a correlation between variables ($r, r_S \neq 0$).
 \end{itemize}
+\vspace{-10px}
 
 ### Impact of Absences on Final Grade
 
@@ -221,27 +229,28 @@ We hypothesize a negative relationship between the number of school absences (`a
 
 To choose the most appropriate correlation test, we have to verify the distribution of the `absences` variable. In fact, the Pearson Correlation test assumes that data are drawn from a normal distribution.
 
-```{r echo=FALSE}
+\vspace{-10px}
+```{r echo=FALSE, fig.width=8, fig.height=5, out.width="70%", fig.align="center"}
 hist(data$absences, main="Distribution of Absences", xlab="Number of Absences")
 shapiro_test <- shapiro.test(data$absences)
 ```
 
-As shown in the histogram, the variable follows a right-skewed distribution (strongly asymmetric). 
+As shown in the histogram, the variable follows a right-skewed distribution (strongly asymmetric). Then, the Shapiro-Wilk's test returns a p-value = `r shapiro_test$p.value` lower than $\alpha = 0.05$ that confirms non-normality. 
 
-Then, the Shapiro-Wilk's test returns a p-value = `r shapiro_test$p.value` lower than $\alpha = 0.05$ that confirms non-normality. 
 Given this information, it is better to compute a Spearman test, which does not require a normal distribution of the data.
 
-```{r include=FALSE}
+```{r include=FALSE, fig.width=8, fig.height=5, out.width="70%", fig.align="center"}
 cor_spearman_absences <- cor.test(data$absences, data$G3, method = "spearman", exact = FALSE)
 ```
 
 After computing the test, we can see that the correlation factor from Spearman is `r round(cor_spearman_absences$estimate, 3)`.
 
-Due to the presence of ties in the `absences` and `G3` variables, the exact p-value for Spearman's $r_S$ could not be computed. Therefore, the standard asymptotic approximation was used `r round(cor_spearman_absences$p.value, 3)`. Since this value is very high, we cannot reject $H_0$. Statistically, this indicates no significant correlation between absences and the final grade in this dataset. This finding refutes our initial hypothesis that higher absences lead to lower grades.
+The Spearman test resulted in a high p-value of `r round(cor_spearman_absences$p.value, 3)` (calculated via asymptotic approximation due to data ties), leading to the non-rejection of the null hypothesis ($H_0$). This indicates that no statistically significant correlation exists between `absences` and final grades in this dataset, refuting the hypothesis that increased absences lower student performance.
 
 Using a scatterplot, we can visualize the trend analyzed by the correlation test.
 
-```{r echo=FALSE}
+\vspace{-10px}
+```{r echo=FALSE, fig.width=8, fig.height=5, out.width="70%", fig.align="center"}
 plot(data$absences, data$G3, 
      main = "Absences vs Final Grade (G3)",
      xlab = "Number of Absences", 
@@ -336,13 +345,16 @@ logit_full <- glm(Promoted ~ schoolsup + paid + higher + failures + goout +
                             address + Pstatus + famrel + freetime + health + sex + Dalc + Walc, 
                             data = data, family = binomial)
 logit_stepwise <- step(logit_full, direction = "both", trace = 0)
+
+data["Promoted"] <- NULL  # Clean up
+data_filtered["Promoted"] <- NULL  # Clean up
 ```
 
-The **Initial Model** showed `higher` as a positive predictor, but the **Improved Model** significantly lowered the AIC (from `r round(logit_model$aic,0)` to `r round(logit_improved$aic, 0)`), highlighting the critical negative impact of past `failures`. The **Stepwise** algorithm converged to the same set of predictors as our Improved Model (plus `sex`), confirming the robustness of our manual selection.
+The **Initial Model** showed `higher` as a positive predictor, but the **Improved Model** significantly lowered the AIC (from `r round(logit_model$aic,0)` to `r round(logit_improved$aic, 0)`), highlighting the critical negative impact of past `failures`. The **Stepwise** algorithm converged to the same set of predictors as our **Improved Model** (plus `sex`), confirming the robustness of our manual selection.
 
 ### Excluding Zero-Grades
 
-We observed 38 "dropout" entries (`G3`=0). We re-tested the Improved Model on filtered data to ensure results weren't driven solely by these outliers.
+We observed 38 "dropout" entries (`G3`=0). We re-tested the Improved Model on filtered data, called **Filtered Model**, to ensure results weren't driven solely by these outliers.
 
 ```{r include=FALSE}
 data_filtered <- subset(data, G3 != 0)
@@ -400,7 +412,7 @@ Where:
   -   $\beta_i$ are the coefficients representing the change in $Y$ for a one-unit change in $X_i$.
   -   $\epsilon$ is the error term (residuals).
 
-We aim to predict the final grade (**G3**) based on different sets of predictors.
+We aim to predict the final grade (`G3`) based on different sets of predictors.
 
 ### Numeric Prediction Models
 
@@ -428,7 +440,7 @@ The **Optimized Model** included `failures`, `Medu`, `goout`, `absences`, and `f
 
 Diagnostic plots for the Optimized Model revealed non-normality in the residuals, driven largely by the subset of students with `G3=0` (dropouts). To fix this, we refined the model to predict performance only for active students (`G3 > 0`).
 
-```{r fig.align="center", echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, out.width="80%", fig.align="center"}
 library(ggplot2)
 library(gridExtra)
 
@@ -517,6 +529,7 @@ This result should be interpreted with caution. It is a classic example of **sel
 ## The Social Trade-off: Romance vs. Alcohol
 The analysis of social behaviors offered a nuanced perspective on student life.
 
+\vspace{-5px}
 *   **Romantic Relationships**: We observed a significant penalty for students in relationships (>1 grade point drop). This supports the "resource allocation" theory, where the time and emotional energy demanded by relationships compete directly with academic focus.
 *   **Alcohol Consumption**: contrary to the "moral panic" often associated with youth alcohol use, weekend consumption (`Walc`) did not show a statistically significant independent negative effect on grades in our ANOVA or regression models. This implies that moderate social engagement does not inherently harm performance, whereas the sustained daily time commitment of a relationship does.
 
