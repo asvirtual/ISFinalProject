@@ -48,7 +48,7 @@ We investigate whether common assumptions about student life hold statistical we
 \begin{itemize}
   \item How do social habits (e.g., alcohol consumption, romantic relationships) interact with academic results?
   \item Do family background factors (e.g., parents' education) significantly stratify student performance?
-  \item Can we quantify the impact of effort (study time) versus external support (paid classes) on the final Mathematics grade (G3)?
+  \item Can we quantify the impact of individual factors such as effort (study time) and external support (paid classes) on the final Mathematics grade (G3)?
 \end{itemize}
 \vspace{-10px}
 
